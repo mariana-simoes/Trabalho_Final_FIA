@@ -201,5 +201,27 @@ São incorporados seis tipos principais de restrições:
 
 O conjunto de axiomas é combinado por média, produzindo um escore global de satisfação lógica que pode ser utilizado diretamente como objetivo de otimização no framework de *Logic Tensor Networks*.
 
+#### Bloco 2.13 — Axiomas lógicos para predicados de tamanho e agregação final
+
+Este bloco define os **axiomas lógicos associados aos predicados de tamanho**, bem como a função de **agregação global** entre forma e tamanho.
+
+A função `size_axioms` impõe duas restrições principais:  
+(i) **supervisionamento positivo**, garantindo alta ativação de `isSmall` para objetos pequenos e de `isBig` para objetos grandes;  
+(ii) **supervisionamento negativo**, penalizando ativações contraditórias (objetos pequenos ativando `isBig` e vice-versa).  
+
+Devido à natureza binária do atributo tamanho, não são necessárias restrições adicionais de exclusividade ou completude, diferentemente do caso das formas.
+
+A função `combined_axioms` integra os axiomas de **forma** e **tamanho** por meio de uma média ponderada, permitindo controlar a influência relativa de cada grupo de predicados durante o treinamento. No arranjo adotado, maior peso é atribuído às formas (0.7), refletindo sua maior complexidade semântica em comparação ao tamanho (0.3).
+
+#### Bloco 2.14 — Função de treinamento conjunto dos predicados
+
+Este bloco implementa o **processo de treinamento unificado** de todos os predicados lógicos definidos na Seção 2, abrangendo **formas** e **tamanhos** simultaneamente. Os parâmetros treináveis incluem tanto o modelo compartilhado de formas quanto o modelo de tamanhos, otimizados conjuntamente por meio do algoritmo Adam.
+
+O critério de otimização é baseado na **Lógica Tensorial (LTN)**, onde a função objetivo busca **maximizar o grau de satisfação dos axiomas lógicos**. Para isso, a perda é definida como o complemento da satisfação global (`loss = 1 − sat`), permitindo o uso direto de gradiente descendente.
+
+Durante cada época, são computadas separadamente a satisfação total, a satisfação associada às formas e a satisfação associada aos tamanhos, possibilitando monitorar o comportamento individual de cada grupo de predicados ao longo do treinamento. Essas métricas são armazenadas para posterior análise e visualização.
+
+O processo de treinamento é inteiramente guiado por restrições lógicas, **sem uso de rótulos explícitos no formato tradicional**, reforçando o caráter neuro-simbólico e declarativo da abordagem adotada.
+
 
 
