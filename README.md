@@ -137,4 +137,69 @@ Cada objeto é renderizado com sua **cor RGB**, **forma geométrica** e **dimens
 
 Os rótulos indicam o identificador do objeto e sua dimensão, facilitando inspeção visual e depuração. O gráfico utiliza grade com coordenadas inteiras, aspecto igual e legenda semântica, garantindo uma representação fiel e interpretável do cenário espacial.
 
+#### Bloco 2.4 — Conectivos lógicos fuzzy e quantificadores
+
+Este bloco define os **operadores lógicos fuzzy** e os **quantificadores** utilizados nas *Logic Tensor Networks*. São implementados diretamente a partir dos operadores padrão da biblioteca LTN, incluindo negação, conjunção, disjunção e implicação fuzzy.
+
+Os quantificadores universal e existencial são implementados por meio de agregadores do tipo *p-mean*, permitindo avaliar fórmulas sobre conjuntos de objetos de forma diferenciável. Um agregador global de satisfação (`SatAgg`) é definido para combinar múltiplas fórmulas lógicas em um único valor de consistência, servindo como métrica de satisfação das restrições lógicas.
+
+#### Bloco 2.5 — Predicados neurais para classificação de formas
+
+Este bloco define o modelo `MultiShapePredictor`, uma rede neural única responsável por aprender **predicados de forma** para cinco categorias geométricas. A arquitetura utiliza um **encoder compartilhado** para extrair representações latentes gerais a partir dos vetores de atributos, seguido por **cabeças especializadas**, uma para cada forma.
+
+Cada cabeça retorna um valor escalar em `[0,1]`, interpretado como o grau de verdade fuzzy do predicado correspondente. Essa estrutura permite o compartilhamento de conhecimento entre formas, mantendo ao mesmo tempo especialização semântica, sendo diretamente integrável ao raciocínio lógico diferenciável das LTNs.
+
+#### Bloco 2.6 — Wrapper LTN para predicados de forma
+
+Este bloco define a classe `LTNShapePredicate`, que atua como um **wrapper** para tornar o modelo neural de formas compatível com a interface esperada pelas *Logic Tensor Networks*. O wrapper permite que o predicado seja utilizado como uma função lógica, encapsulando a saída do modelo em um objeto com atributo `value`.
+
+Essa adaptação garante integração direta entre as saídas neurais contínuas e os operadores lógicos fuzzy da LTN, sem alterar a arquitetura do modelo.
+
+#### 2.7 — Instanciação dos predicados de forma
+
+Este bloco cria os cinco predicados lógicos de forma (`isCircle`, `isSquare`, `isCylinder`, `isCone` e `isTriangle`) a partir de um **único modelo neural compartilhado**. Cada predicado utiliza uma cabeça especializada distinta, preservando compartilhamento de representações e especialização semântica.
+
+Essa abordagem reduz redundância, melhora eficiência de aprendizado e permite que múltiplos predicados lógicos sejam avaliados de forma consistente dentro do framework de raciocínio lógico diferenciável.
+
+#### Bloco 2.8 — Predicados neurais de tamanho
+
+Este bloco define o modelo `SizePredictor`, uma rede neural dedicada à identificação do **tamanho dos objetos**. O modelo aprende dois predicados fuzzy binários: `isSmall(x)` e `isBig(x)`, correspondentes às categorias *small* e *large*.
+
+A arquitetura utiliza um **encoder compartilhado** para extrair características relevantes de tamanho a partir dos vetores de atributos, seguido por duas cabeças especializadas, uma para cada predicado. Cada cabeça retorna um valor contínuo em `[0,1]`, interpretado como o grau de verdade fuzzy do predicado, permitindo integração direta com os operadores e quantificadores das *Logic Tensor Networks*.
+
+#### Bloco 2.9 — Wrapper LTN para predicados de tamanho
+
+Este bloco define a classe `LTNSizePredicate`, responsável por tornar o modelo neural de tamanho compatível com a interface das *Logic Tensor Networks*. O wrapper permite que os predicados `isSmall(x)` e `isBig(x)` sejam utilizados como funções lógicas, encapsulando a saída contínua do modelo em um objeto com atributo `value`.
+
+Essa abstração garante a integração transparente entre os predicados neurais de tamanho e os operadores lógicos fuzzy, mantendo consistência semântica e compatibilidade com o mecanismo de raciocínio diferenciável da LTN.
+
+#### Bloco 2.10 — Instanciação dos predicados de tamanho
+
+Este bloco instancia os predicados lógicos de tamanho `isSmall` e `isBig` a partir de um **único modelo neural compartilhado** (`SizePredictor`). Cada predicado utiliza uma cabeça especializada correspondente à sua categoria, mantendo consistência semântica e eficiência computacional.
+
+Essa abordagem permite avaliar os predicados de tamanho de forma diferenciável e integrá-los diretamente às fórmulas lógicas fuzzy no framework de *Logic Tensor Networks*.
+
+#### Bloco 2.11 — Extração do *ground truth*
+
+Este bloco realiza a extração do *ground truth* a partir do **dataset fixo**, garantindo alinhamento total com a especificação definida em `load_fixed_clevr_dataset`. As informações de forma são recuperadas diretamente da codificação *one-hot* nos índices `[5–9]`, enquanto o tamanho é extraído do índice `[10]`.
+
+Para as formas, são geradas máscaras booleanas (`circles_gt`, `squares_gt`, `cylinders_gt`, `cones_gt`, `triangles_gt`) indicando a classe verdadeira de cada objeto. Para o tamanho, são criadas máscaras correspondentes às categorias *small* (`0.0`) e *big* (`1.0`).
+
+A função auxiliar `get_size_labels` encapsula a extração dos rótulos de tamanho, facilitando reutilização e garantindo consistência semântica entre os dados, os predicados neurais e as avaliações posteriores.
+
+#### Bloco 2.12 — Axiomas lógicos para predicados de forma
+
+Este bloco define a função `shape_axioms`, responsável por construir o conjunto de **axiomas lógicos fuzzy** que regulam o aprendizado e a consistência dos predicados de forma. Os axiomas são avaliados diretamente sobre o `data_tensor` e agregados em um único valor de satisfação.
+
+São incorporados seis tipos principais de restrições:  
+(i) **supervisionamento positivo forte**, reforçando ativações corretas com maior peso;  
+(ii) **supervisionamento negativo seletivo**, penalizando apenas confusões entre formas semanticamente distintas;  
+(iii) **exclusividade global**, incentivando que cada objeto ative predominantemente uma única forma;  
+(iv) **penalização de entropia**, forçando especialização e decisões mais nítidas;  
+(v) **exclusividade par-a-par seletiva**, aplicada apenas a pares de formas empiricamente problemáticos;  
+(vi) **completude**, garantindo que todo objeto pertença a pelo menos uma categoria de forma.
+
+O conjunto de axiomas é combinado por média, produzindo um escore global de satisfação lógica que pode ser utilizado diretamente como objetivo de otimização no framework de *Logic Tensor Networks*.
+
+
 
