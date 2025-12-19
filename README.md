@@ -101,5 +101,40 @@ Este bloco define constantes que representam o tamanho de objetos geométricos u
 
 Esses valores serão utilizados para caracterizar propriedades visuais dos objetos, possivelmente associadas a rótulos lógicos ou semânticos dentro do modelo.
 
+### 2 — Tarefa principal: taxonomia e formas
+
+#### Bloco 2.1 — Dataset fixo para a tarefa de taxonomia e formas
+
+Este bloco define a função `load_fixed_clevr_dataset`, responsável por construir um dataset sintético fixo, inspirado no CLEVR, para a tarefa principal de **taxonomia de objetos geométricos**. O objetivo é representar atributos visuais e semânticos de cada objeto, permitindo seu uso em modelos neurais e em *Logic Tensor Networks*.
+
+Os dados são definidos manualmente na lista `raw_data`, onde cada instância descreve um objeto por meio de sua posição espacial `(x, y)`, cor no espaço RGB, forma geométrica codificada em *one-hot* (círculo, quadrado, cilindro, cone ou triângulo) e um atributo binário de tamanho (*small* ou *large*). Essa definição explícita garante controle total sobre a distribuição e a taxonomia das classes.
+
+As coordenadas espaciais são normalizadas para o intervalo `[0, 1]`, tornando o dataset independente da escala absoluta do plano. Em seguida, para cada objeto é construído um vetor de características com **11 atributos**: posição normalizada (2), cor RGB (3), codificação da forma (5) e tamanho (1). Esses vetores constituem a representação numérica utilizada pelos modelos.
+
+O atributo lógico de tamanho é convertido em uma **dimensão física real** (`SMALL_SIZE` ou `LARGE_SIZE`), armazenada separadamente, permitindo integrar informações geométricas contínuas ao raciocínio lógico. Além disso, são gerados rótulos textuais legíveis que descrevem cada objeto (forma, cor, tamanho e posição), facilitando inspeção, depuração e visualização.
+
+Por fim, os vetores são convertidos em um tensor PyTorch do tipo `float32`, as dimensões físicas em um array NumPy, e uma validação garante que o dataset final possua formato `(25, 11)`. A função retorna o tensor de dados, os rótulos descritivos e as dimensões físicas associadas a cada objeto.
+
+#### Bloco 2.2 — Geração de dataset CLEVR aleatório
+
+Este bloco define a função `generate_random_clevr_dataset`, responsável por criar um **dataset sintético aleatório**, compatível com a mesma taxonomia e estrutura do dataset fixo. Essa versão é utilizada para testes, generalização e experimentos controlados por semente aleatória.
+
+A função permite definir o número de objetos (`n_objects`) e uma semente (`seed`) para garantir reprodutibilidade. Quando fornecida, a semente sincroniza os geradores do NumPy e do PyTorch, assegurando que os mesmos dados sejam gerados em execuções distintas.
+
+Para cada objeto, são amostradas posições contínuas `(x, y)` dentro dos limites do plano, posteriormente normalizadas para o intervalo `[0, 1]`. As cores são geradas aleatoriamente no espaço RGB, e a forma geométrica é selecionada uniformemente entre cinco categorias (círculo, quadrado, cilindro, cone e triângulo), sendo codificada em *one-hot*.
+
+O atributo de tamanho é amostrado como uma variável binária (*small* ou *large*), mantendo compatibilidade semântica com o dataset fixo. Cada instância é representada por um vetor de **11 atributos**: posição normalizada (2), cor (3), forma (5) e tamanho (1), garantindo compatibilidade direta com os modelos neurais e lógicos utilizados.
+
+O tamanho lógico é convertido em uma **dimensão física real** (`SMALL_SIZE` ou `LARGE_SIZE`), armazenada separadamente para uso em raciocínio geométrico ou visual. Para fins de identificação, cada objeto recebe um rótulo simples (`Obj1`, `Obj2`, …).
+
+Ao final, os dados são convertidos para um tensor PyTorch do tipo `float32`, as dimensões físicas para um array NumPy, e a função retorna o tensor de atributos, os rótulos e as dimensões associadas a cada objeto.
+
+#### Bloco 2.3 — Visualização do cenário 2D
+
+Este bloco define a função `plot_scene`, responsável por **visualizar graficamente o cenário 2D** do dataset CLEVR. As coordenadas normalizadas são desnormalizadas apenas para fins de visualização, preservando a correspondência espacial original do plano.
+
+Cada objeto é renderizado com sua **cor RGB**, **forma geométrica** e **dimensão física real** (`2×2` ou `3×3`). As formas são desenhadas como *patches* preenchidos do Matplotlib (círculo, quadrado, cilindro, cone e triângulo), sempre acompanhadas de sua **caixa delimitadora**, evidenciando o espaço físico ocupado.
+
+Os rótulos indicam o identificador do objeto e sua dimensão, facilitando inspeção visual e depuração. O gráfico utiliza grade com coordenadas inteiras, aspecto igual e legenda semântica, garantindo uma representação fiel e interpretável do cenário espacial.
 
 
