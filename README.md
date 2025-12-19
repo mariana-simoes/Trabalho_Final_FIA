@@ -223,5 +223,100 @@ Durante cada época, são computadas separadamente a satisfação total, a satis
 
 O processo de treinamento é inteiramente guiado por restrições lógicas, **sem uso de rótulos explícitos no formato tradicional**, reforçando o caráter neuro-simbólico e declarativo da abordagem adotada.
 
+### 3 - Tarefa: Raciocínio Espacial e Horizontal
 
+#### Bloco 3.1 — Predicados Espaciais Aprendíveis
 
+Este bloco define os **predicados espaciais binários aprendíveis** utilizados na tarefa de raciocínio espacial horizontal. Cada predicado é modelado por uma rede neural que recebe como entrada a **concatenação das representações de dois objetos** e produz um valor escalar em \([0,1]\), interpretado como o grau de verdade fuzzy da relação espacial entre eles.
+
+A arquitetura empregada é um *Multilayer Perceptron (MLP)* com múltiplas camadas totalmente conectadas, funções de ativação ReLU e camadas de *dropout*, visando capturar dependências espaciais não lineares e reduzir sobreajuste. A camada final utiliza uma função sigmoide, garantindo compatibilidade com o framework de lógica fuzzy.
+
+Instâncias independentes do modelo são criadas para cada relação espacial horizontal aprendida (`leftOf` e `rightOf`), permitindo que cada predicado adquira uma representação semântica própria a partir dos dados e das restrições lógicas impostas posteriormente.
+
+#### Bloco 3.2 — Wrappers LTN para Predicados Espaciais
+
+Este bloco implementa *wrappers* responsáveis por integrar os modelos neurais de relações espaciais ao framework de **Logic Tensor Networks (LTN)**. Esses *wrappers* garantem que as saídas dos predicados sejam tratadas como valores de verdade fuzzy, permitindo sua composição direta em axiomas e consultas lógicas.
+
+A classe `LTNSpatialPredicate` encapsula um modelo neural aprendível, realizando a padronização das entradas (extração de valores, conversão para tensores e ajuste de dimensionalidade), seguida da concatenação dos objetos e da inferência do grau de verdade da relação espacial. O resultado é retornado em uma estrutura compatível com operações lógicas fuzzy.
+
+Além disso, o predicado `closeTo` é definido como uma **função fixa**, baseada em um *kernel gaussiano* aplicado à distância euclidiana entre as posições dos objetos. Essa escolha permite modelar proximidade espacial de forma contínua e diferenciável, sem necessidade de treinamento supervisionado.
+
+Por fim, os predicados `leftOf`, `rightOf` e `closeTo` são instanciados e disponibilizados para uso nos axiomas lógicos e nos procedimentos de raciocínio definidos nos blocos subsequentes.
+#### Bloco 3.3 — Construção do Ground Truth Espacial
+
+Este bloco define o procedimento para geração do *ground truth* das relações espaciais entre todos os pares de objetos do cenário. A partir das coordenadas normalizadas dos objetos, são calculadas matrizes booleanas que representam as relações `leftOf`, `rightOf` e `closeTo`.
+
+As relações horizontais `leftOf` e `rightOf` são determinadas exclusivamente pela comparação das coordenadas no eixo *x*, garantindo uma definição direta e consistente dessas relações. Já a relação `closeTo` é definida com base na distância euclidiana entre objetos no plano bidimensional.
+
+Um ponto importante deste bloco é o **ajuste do limiar de proximidade**, aumentado de 0.20 para 0.35 no espaço normalizado. Esse valor corresponde aproximadamente a 9 unidades no espaço original, permitindo uma definição mais realista de proximidade espacial e evitando um *ground truth* excessivamente esparso.
+
+Além de calcular as matrizes de verdade, o bloco também apresenta estatísticas descritivas sobre a distribuição das relações, fornecendo uma visão quantitativa do equilíbrio entre pares positivos e negativos utilizados nos estágios posteriores de raciocínio e avaliação.
+
+#### Bloco 3.4 — Definição dos Axiomas Espaciais Horizontais
+
+Este bloco formaliza os **axiomas lógicos fuzzy** responsáveis por guiar o aprendizado das relações espaciais horizontais no framework LTN. O objetivo é combinar *supervisionamento explícito* com *propriedades estruturais da lógica*, produzindo uma medida única de satisfação global.
+
+O supervisionamento é aplicado **exclusivamente aos predicados aprendidos** `leftOf` e `rightOf`, utilizando o *ground truth* para reforçar exemplos positivos e negativos. Cada tipo de supervisão contribui diretamente para a função de satisfação, incentivando altas ativações nos pares corretos e penalizando predições inconsistentes.
+
+Além do supervisionamento, o bloco impõe **propriedades lógicas fundamentais**:
+- **Irreflexividade**, garantindo que nenhum objeto esteja à esquerda ou à direita de si mesmo.
+- **Inversão**, assegurando consistência entre `leftOf(x,y)` e `rightOf(y,x)`.
+- **Transitividade**, reforçando a coerência relacional entre triplas de objetos.
+
+A relação `closeTo` é explicitamente excluída do treinamento neste bloco, pois é definida como uma função fixa baseada em distância, e não como um predicado aprendido.
+
+Por fim, todas as contribuições são agregadas e normalizadas em um único escalar de satisfação, que representa o grau global de aderência do modelo às regras espaciais horizontais definidas.
+
+#### Bloco 3.5 — Treinamento dos Predicados Espaciais Horizontais
+
+Este bloco define o treinamento conjunto dos predicados espaciais aprendidos `leftOf` e `rightOf`. Os parâmetros de ambos os modelos são otimizados simultaneamente utilizando o otimizador Adam.
+
+A função de perda é formulada como o complemento da satisfação agregada dos axiomas espaciais horizontais, incentivando o modelo a maximizar a coerência lógica definida no Bloco 3.4.
+
+Durante o treinamento, a satisfação lógica e a perda são registradas a cada época, permitindo acompanhar a convergência do raciocínio espacial.
+
+#### Bloco 3.6 — Avaliação dos Predicados Espaciais
+
+Este bloco realiza a avaliação quantitativa dos predicados espaciais `leftOf`, `rightOf` e `closeTo` sobre todos os pares de objetos distintos. As predições fuzzy são binarizadas com limiar 0.5 e comparadas ao *ground truth* correspondente.
+
+São calculadas as métricas clássicas de classificação — acurácia, precisão, recall e F1-score — para cada relação espacial. No caso de `closeTo`, a avaliação utiliza diretamente a função baseada em kernel gaussiano, sem modelo treinável.
+
+Além das métricas individuais, é reportada a satisfação agregada dos axiomas espaciais horizontais (*SatAgg*), permitindo relacionar desempenho estatístico e coerência lógica.
+
+#### Bloco 3.7 — Queries e Relações Compostas
+
+Este bloco implementa consultas lógicas e relações compostas sobre objetos:
+
+1. **inBetween(x, y, z)**  
+   Determina se o objeto `x` está entre `y` e `z`, horizontal ou verticalmente.  
+   - Horizontal: `(leftOf(y,x) ∧ rightOf(z,x)) ∨ (leftOf(z,x) ∧ rightOf(y,x))`  
+   - Vertical: `(below(y,x) ∧ above(z,x)) ∨ (below(z,x) ∧ above(y,x))`  
+   A saída é um valor fuzzy (`0-1`) combinando ambos os casos via disjunção.
+
+2. **query_leftmost_object(data_tensor)**  
+   Identifica o objeto mais à esquerda segundo o predicado `leftOf`.  
+   Utiliza um quantificador universal fuzzy (`pMeanError`) sobre todos os pares, retornando o objeto com maior score.
+
+3. **query_rightmost_object(data_tensor)**  
+   De forma análoga, retorna o objeto mais à direita considerando `rightOf` e quantificador universal fuzzy.
+
+Estes métodos permitem extrair informações lógicas complexas e composições espaciais a partir dos predicados treinados.
+
+#### Bloco 3.8 — Execução Completa do Raciocínio Espacial Horizontal
+
+Este bloco integra todas as etapas da Tarefa 2:
+
+1. **Ground Truth**  
+   Calcula os pares de objetos para `leftOf`, `rightOf` e `closeTo` com threshold ajustado (0.35).
+
+2. **Treinamento**  
+   Chama `train_spatial_predicates` para otimizar os predicados `leftOf` e `rightOf` usando axiomas horizontais.
+
+3. **Avaliação**  
+   Executa `evaluate_spatial_predicates` para medir acurácia, precisão, recall, F1-score e satisfação dos axiomas (`SatAgg`).
+
+4. **Consultas Lógicas**  
+   - Identifica objeto mais à esquerda e mais à direita via `query_leftmost_object` e `query_rightmost_object`.  
+   - Realiza um teste de relação composta `inBetween(C2, Q1, Q3)` para verificar posição relativa entre objetos.
+
+Retorna o histórico de treinamento e os resultados de avaliação para análise posterior.
