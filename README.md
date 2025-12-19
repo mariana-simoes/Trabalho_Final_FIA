@@ -51,3 +51,55 @@ Associadas a cada imagem, o CLEVR fornece **perguntas em linguagem natural** pro
 Uma característica central do CLEVR é a disponibilidade de **anotações estruturadas**, como grafos de cena e programas funcionais que descrevem as etapas de raciocínio necessárias para responder cada pergunta. Essas informações tornam o dataset particularmente adequado para pesquisas em **modelos neuro-simbólicos**, **raciocínio explicável** e **integração entre visão e linguagem**, sendo adotado como benchmark em estudos de raciocínio visual e inferência multimodal.
 
 ---
+
+## Comentários sobre o Código
+
+A partir deste ponto, o texto apresenta comentários e explicações diretamente associados ao código-fonte, com o objetivo de descrever suas definições, estrutura e funcionamento. As seções a seguir estão organizadas de forma a acompanhar a lógica do código apresentado.
+
+### 1 — Definições
+#### Bloco 1.1 — Instalação das dependências
+
+Neste bloco são instaladas as bibliotecas necessárias para a execução do código no ambiente do Google Colab.
+
+- **torch**: biblioteca principal para computação com tensores e redes neurais (PyTorch).
+- **ltn**: biblioteca *Logic Tensor Networks*, utilizada para combinar lógica simbólica com aprendizado profundo.
+- **numpy**: biblioteca fundamental para computação numérica e manipulação de arrays.
+- **matplotlib**: biblioteca para visualização de dados e geração de gráficos.
+
+O uso do comando `!pip install` garante que todas as dependências estejam disponíveis, mesmo em ambientes recém-criados.
+
+#### Bloco 1.2 — Importação de módulos
+
+Este bloco realiza a importação das bibliotecas e módulos que serão utilizados ao longo do código.
+
+- **torch** e **torch.nn**: fornecem suporte a tensores, operações numéricas e definição de modelos neurais.
+- **ltn**: permite a definição de predicados, funções e fórmulas lógicas diferenciáveis.
+- **numpy**: utilizado para operações matemáticas auxiliares.
+- **matplotlib.pyplot** e classes gráficas associadas: usadas para visualização de objetos geométricos e resultados.
+- **sklearn.metrics**: fornece métricas de avaliação como *accuracy*, *precision*, *recall* e *F1-score*.
+
+Ao final, são exibidas mensagens confirmando o sucesso da importação e a versão do PyTorch utilizada, o que auxilia na reprodutibilidade dos experimentos.
+
+
+#### Bloco 1.3 — Seleção do dispositivo de execução
+
+Neste bloco é definido o dispositivo computacional que será utilizado para executar os cálculos.
+
+- Caso uma GPU compatível com CUDA esteja disponível, o código será executado na GPU (`cuda:0`).
+- Caso contrário, o processamento será realizado na CPU.
+
+Essa verificação automática permite melhor desempenho quando há suporte a aceleração por hardware.
+O dispositivo selecionado é exibido para fins de verificação e depuração.
+
+
+#### Bloco 1.4 — Definição de constantes geométricas
+
+Este bloco define constantes que representam o tamanho de objetos geométricos utilizados no experimento.
+
+- **SMALL_SIZE**: representa objetos classificados como pequenos, com dimensão 2 × 2.
+- **LARGE_SIZE**: representa objetos classificados como grandes, com dimensão 3 × 3.
+
+Esses valores serão utilizados para caracterizar propriedades visuais dos objetos, possivelmente associadas a rótulos lógicos ou semânticos dentro do modelo.
+
+
+
