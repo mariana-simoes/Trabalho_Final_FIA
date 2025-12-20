@@ -334,12 +334,12 @@ As relações consideradas nesta tarefa incluem:
 
 ---
 
-#### Bloco 4.1 – Arquitetura Neural para Inferência Relacional Vertical  
-### `VerticalRelationPredictor`
+#### Bloco 4.1 — Arquitetura Neural para Inferência Relacional Vertical  
+#### `VerticalRelationPredictor`
 
 Este bloco define o componente neural responsável por modelar relações binárias entre pares de objetos. O modelo adotado é um **Perceptron Multicamadas (MLP)**, projetado para operar como um **predicado lógico fuzzy**, produzindo graus contínuos de verdade.
 
-### Estrutura da Rede
+#### Estrutura da Rede
 
 A rede recebe como entrada um vetor de dimensão 22, resultante da concatenação dos atributos de dois objetos distintos. Cada objeto é descrito por um conjunto fixo de características geométricas, espaciais e semânticas.
 
@@ -358,11 +358,11 @@ Formalmente, a saída do modelo representa:
 
 ---
 
-#### Bloco 4.2 – Construção do Ground Truth Vertical
+#### Bloco 4.2 — Construção do Ground Truth Vertical
 
 Antes do processo de aprendizado, é necessário estabelecer uma referência objetiva de verdade baseada na geometria do ambiente. Para isso, define-se um **ground truth determinístico** a partir das coordenadas verticais dos objetos.
 
-### Definição Formal
+#### Definição Formal
 
 Seja \(y_i\) a coordenada vertical do objeto \(i\):
 
@@ -382,11 +382,11 @@ Essas matrizes são utilizadas tanto para **supervisão direta** quanto para val
 
 ---
 
-#### Bloco 4.3 – Definição do Predicado Físico `canStack(x, y)`
+#### Bloco 4.3 — Definição do Predicado Físico `canStack(x, y)`
 
 O predicado `canStack` modela conhecimento físico básico e não é aprendido por uma rede neural. Em vez disso, ele é definido explicitamente por meio de **regras lógicas fuzzy**, refletindo princípios elementares de estabilidade e equilíbrio.
 
-### Condições para Empilhamento
+#### Condições para Empilhamento
 
 Um objeto \(x\) pode ser empilhado sobre um objeto \(y\) se, e somente se, as seguintes condições forem satisfeitas:
 
@@ -398,7 +398,7 @@ O empilhamento é considerado viável se existir:
 - Compatibilidade dimensional entre \(x\) e \(y\), ou
 - Alinhamento horizontal suficiente entre seus centroides
 
-### Operadores Lógicos Suaves
+#### Operadores Lógicos Suaves
 
 - Conjunção lógica (∧): multiplicação
 - Disjunção lógica (∨): operador máximo
@@ -408,12 +408,12 @@ O resultado final é um valor contínuo que expressa o **grau de plausibilidade 
 
 ---
 
-#### Bloco 4.4 – Formulação dos Axiomas Lógicos Verticais  
-### `vertical_axioms`
+#### Bloco 4.4 — Formulação dos Axiomas Lógicos Verticais  
+#### `vertical_axioms`
 
 Este bloco constitui o núcleo simbólico do sistema, no qual são definidos axiomas universais que devem ser respeitados pelas predições neurais.
 
-### Axioma 1 – Relação Inversa
+#### Axioma 1 – Relação Inversa
 \[
 \forall x, y \; (below(x, y) \leftrightarrow above(y, x))
 \]
@@ -422,7 +422,7 @@ Esse axioma garante consistência semântica entre os dois predicados verticais.
 
 ---
 
-### Axioma 2 – Transitividade
+#### Axioma 2 – Transitividade
 \[
 \forall i, j, k \; (below(i, j) \land below(j, k) \rightarrow below(i, k))
 \]
@@ -431,20 +431,20 @@ Esse princípio assegura coerência global das relações espaciais inferidas.
 
 ---
 
-### Axioma 3 – Supervisão Positiva e Negativa
+#### Axioma 3 – Supervisão Positiva e Negativa
 
 As predições dos modelos `below_model` e `above_model` são explicitamente penalizadas quando divergem do ground truth geométrico, reforçando o alinhamento entre aprendizado estatístico e realidade física.
 
 ---
 
-### Axioma 4 – Consistência do Predicado `canStack`
+#### Axioma 4 – Consistência do Predicado `canStack`
 
 As inferências relacionadas ao empilhamento são avaliadas de acordo com as regras físicas definidas, garantindo que o sistema não produza conclusões fisicamente implausíveis.
 
 ---
 
-#### Bloco 4.5 – Processo de Treinamento Baseado em Satisfatibilidade  
-### `train_vertical_predicates`
+#### Bloco 4.5 — Processo de Treinamento Baseado em Satisfatibilidade  
+#### `train_vertical_predicates`
 
 O treinamento do sistema não visa minimizar uma função de erro tradicional, mas sim **maximizar o grau médio de satisfação dos axiomas lógicos**.
 
@@ -457,18 +457,18 @@ A otimização é realizada com o algoritmo Adam, ajustando simultaneamente os p
 
 ---
 
-#### Bloco 4.6 – Avaliação Quantitativa e Verificação Semântica  
-### `evaluate_vertical_predicates`
+#### Bloco 4.6 — Avaliação Quantitativa e Verificação Semântica  
+#### `evaluate_vertical_predicates`
 
 A avaliação do sistema combina métricas estatísticas tradicionais com testes de coerência lógica.
 
-### Métricas Quantitativas
+#### Métricas Quantitativas
 - Acurácia
 - Precisão
 - Recall
 - F1-score
 
-### Verificações Semânticas
+#### Verificações Semânticas
 - Identificação correta dos objetos mais alto e mais baixo
 - Validação da propriedade inversa entre `below` e `above`
 - Análise qualitativa do predicado `canStack`
@@ -477,8 +477,8 @@ Essa abordagem garante que o sistema não apenas obtenha bom desempenho numéric
 
 ---
 
-#### Bloco 4.7 – Coordenação do Processo Neuro-Simbólico de Aprendizado e Inferência  
-### `run_task3_complete`
+#### Bloco 4.7 — Coordenação do Processo Neuro-Simbólico de Aprendizado e Inferência  
+#### `run_task3_complete`
 
 Este bloco atua como o **mecanismo de coordenação global** do sistema. Ele encapsula e integra todas as etapas do processo neuro-simbólico, incluindo:
 
