@@ -1039,11 +1039,3 @@ Executa três queries (sob `torch.no_grad()`), obtendo um **grau de satisfação
 - **Query 3 — `query_triangles_close_same_size(data)`**  
   Avalia a regra: **triângulos próximos** devem ter o **mesmo tamanho**.  
   Interpretação: usa um threshold mais estrito (`> 0.7`) para indicar regra “respeitada”; caso contrário, “possui violações”.
-
-## Saída esperada -
-
-A execução imprime, para cada dataset:
-- exemplos de explicação para **2 objetos** (formas e tamanhos)
-- um exemplo de explicação para **leftOf(0,1)**, **inBetween(0,1,2)** e **above(0,1)**
-- interpretação textual das **3 queries compostas** com seus graus
-
