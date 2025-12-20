@@ -849,3 +849,84 @@ Observe que o modelo **não foi treinado explicitamente** com rótulos referente
 
 Caso o valor retornado seja próximo de **1.0**, isso indica que a inferência foi bem-sucedida, evidenciando que o sistema neuro-simbólico conseguiu **generalizar e raciocinar corretamente**, indo além do aprendizado supervisionado direto.
 
+# 5 - Tarefa: Raciocínio Composto
+
+# 6 - Função Principal
+
+# 7 - Teste em 5 Datasets
+
+Este trecho reúne utilitários para **avaliar previsões** (hard e soft) e um **roteiro de teste** em múltiplos datasets sintéticos (estilo CLEVR), cobrindo:  
+- **Classificação de Atributos** (forma e tamanho)  
+- **Predicados Relacionais** (espaciais) e **Raciocínio Composto**  
+- **Visualização** dos objetos gerados
+
+## Funções de métricas —
+
+- **`calc_binary_metrics_from_labels(pred_labels, gt_labels)`**  
+  Calcula métricas binárias a partir de **rótulos 0/1**:
+  - `accuracy`, `precision`, `recall`, `f1`  
+  Usa `zero_division=0` para evitar exceções em casos sem positivos.
+
+- **`soft_precision_recall_f1(pred_scores, gt_binary, eps=1e-8)`**  
+  Versão “soft” de Precision/Recall/F1 usando **scores contínuos (0–1)** ao invés de threshold fixo.  
+  A ideia é computar TP/FP/FN ponderados por score:
+  - `tp = Σ(score * gt)`
+  - `fp = Σ(score * (1-gt))`
+  - `fn = Σ((1-score) * gt)`  
+  `eps` evita divisão por zero.
+
+- **`logic_metrics(pred_scores, gt_binary)`**  
+  Avalia previsões (geralmente de predicados lógicos) retornando:
+  - **SatAgg**: `mean(pred_scores)` (grau médio de satisfação)
+  - `accuracy/precision/recall/f1` após **threshold 0.5** para obter rótulos.
+
+## Visualização do Dataset —
+
+- **`plot_dataset(data, labels, dataset_num)`**  
+  Plota os objetos do dataset em uma grade, desenhando cada objeto em (x,y) com:
+  - **cor RGB pura** (one-hot)
+  - **forma** (`circle`, `square`, `cylinder`, `cone`, `triangle`)
+  - **tamanho** (`small` / `big`, via `size > 0.5`)  
+
+  A renderização usa patches do Matplotlib (`Circle`, `Rectangle`, `Polygon`) e adiciona um rótulo textual com `(shape, color, size)`.
+
+## Pipeline de Teste (5 datasets) —
+
+O loop executa `dataset_num = 1..5` e, para cada dataset:
+
+1. **Geração e normalização de cor**
+   - Gera `data, labels` com `generate_random_clevr_dataset(n_objects=25, seed=dataset_num)`.
+   - Converte `data[:, 2:5]` (RGB) para **one-hot puro** via `argmax`, zerando os demais canais.
+   - (Opcional) atualiza `labels["color"]` para `red/green/blue`.
+
+2. **Visualização**
+   - Chama `plot_dataset(...)` para inspeção rápida do dataset.
+
+3. **Formas — Multiclasse (HARD)**
+   - Calcula scores por classe com predicados (`isCircle`, `isSquare`, `isCylinder`, `isCone`, `isTriangle`), formando `shape_preds` com shape `(N, 5)`.
+   - Predição hard via `argmax`, avaliando `accuracy` e `precision/recall/f1` **macro**.
+
+4. **Formas — One-vs-Rest (SOFT)**
+   - Para cada classe, avalia `soft_precision_recall_f1(scores_da_classe, gt_binario)` para medir desempenho **sem discretização hard**.
+
+5. **Tamanhos — Binário**
+   - Obtém scores com `isSmall` e `isBig`.
+   - Threshold 0.5 para gerar rótulos e avalia com `calc_binary_metrics_from_labels`.
+
+6. **Raciocínio espacial (predicados relacionais)**
+   - Computa ground-truth para relações:
+     - horizontal: `leftOf`, `rightOf`, `closeTo`
+     - vertical: `above`, `below`
+   - Varre todos os pares `(i, j)` com `i != j`, coletando `preds` e `gts`.
+   - Reporta **SatAgg** + `accuracy/precision/recall/f1` via `logic_metrics`.
+
+7. **Raciocínio composto**
+   - Avalia `inBetween(i, j, k)` varrendo triplas distintas.
+   - Executa queries compostas e imprime score final:
+     - `query_compound_filtering`
+     - `query_green_cone_between`
+     - `query_triangles_close_same_size`
+
+8. **Cache para explicabilidade**
+   - Salva dados, predições, rótulos e matrizes relacionais em `explanation_cache` para depuração/análises posteriores.
+
