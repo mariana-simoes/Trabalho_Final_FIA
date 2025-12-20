@@ -849,6 +849,252 @@ Observe que o modelo **não foi treinado explicitamente** com rótulos referente
 
 Caso o valor retornado seja próximo de **1.0**, isso indica que a inferência foi bem-sucedida, evidenciando que o sistema neuro-simbólico conseguiu **generalizar e raciocinar corretamente**, indo além do aprendizado supervisionado direto.
 
+### 4 - Tarefa: Racicínio Vertical
+### Bloco 4.1 – Definição dos Predicados de Relação Vertical
+
+Este bloco de código é responsável por definir a **arquitetura da rede neural profunda** que serve como base para os **predicados lógicos de orientação espacial vertical**, especificamente **Abaixo (*Below*)** e **Acima (*Above*)**.  
+A implementação explora a **integração entre PyTorch e Logic Tensor Networks (LTN)**, permitindo que saídas contínuas da rede sejam interpretadas como **graus de verdade fuzzy**.
+
+---
+
+#### Estrutura da Rede Neural (*VerticalRelationPredictor*)
+
+A rede adotada consiste em um **Perceptron Multicamadas (MLP)** projetado para modelar relações espaciais entre **pares de objetos**, a partir de suas representações geométricas.
+
+##### Entrada
+- Recebe um vetor de **dimensão 22**, obtido pela **concatenação das características** de dois objetos  
+  \[
+  (obj_1, obj_2)
+  \]
+- Cada objeto contribui com seu vetor de atributos espaciais, permitindo que a rede capture **relações relativas** entre eles.
+
+##### Camadas Ocultas
+- Três camadas lineares totalmente conectadas (*fully connected*).
+- Função de ativação **ReLU**, garantindo não linearidade e maior capacidade expressiva.
+- Aplicação de **Dropout**:
+  - 30% nas camadas iniciais
+  - 20% nas camadas posteriores  
+  Essas técnicas visam **reduzir overfitting** e aumentar a **robustez do modelo**.
+
+##### Saída
+- Uma única unidade com **função de ativação Sigmoid**.
+- Produz um valor contínuo no intervalo:
+  \[
+  [0, 1]
+  \]
+- Esse valor é interpretado pelo framework **LTN** como o **grau de verdade fuzzy** da relação espacial avaliada (por exemplo, *below(x, y)* ou *above(x, y)*).
+
+---
+
+#### Interpretação Neuro-Simbólica
+
+Ao invés de produzir rótulos binários, a rede gera **valores graduais de confiança**, permitindo que:
+- Relações espaciais sejam tratadas de forma **suave e diferenciável**;
+- Esses valores sejam **combinados com axiomas lógicos** durante o processo de inferência e aprendizado.
+
+Esse design é fundamental para viabilizar o **raciocínio neuro-simbólico**, no qual conhecimento geométrico e restrições lógicas coexistem de forma integrada.
+
+### Bloco 4.2 – Cálculo de Ground Truth para Relações Verticais
+
+Este bloco de código define a função responsável por gerar os **rótulos reais (Ground Truth)**, necessários para o treinamento supervisionado dos **predicados verticais**.  
+O objetivo é **traduzir coordenadas cartesianas contínuas em relações lógicas binárias** com base no eixo vertical (Y).
+
+---
+
+#### Lógica de Comparação Espacial
+
+A função assume que os dados de entrada possuem **coordenadas normalizadas**, e que o **índice 1 do tensor representa a posição vertical ($y$)** de cada objeto.
+
+- **Relação `below(x, y)`**:  
+  Retorna verdadeiro se o objeto \(x\) estiver abaixo de \(y\), ou seja:
+  \[
+  below(x, y) \iff y_x < y_y
+  \]
+
+- **Relação `above(x, y)`**:  
+  Retorna verdadeiro se o objeto \(x\) estiver acima de \(y\), ou seja:
+  \[
+  above(x, y) \iff y_x > y_y
+  \]
+
+---
+
+#### Observações de Implementação
+
+- A função cria **matrizes booleanas N × N** indicando todas as comparações possíveis entre pares de objetos.
+- A diagonal é ignorada, pois não faz sentido comparar um objeto consigo mesmo.
+- Essas matrizes servem como **referência para supervisão positiva e negativa** durante o treinamento dos predicados verticais.
+
+O resultado final é um **dicionário** contendo:
+{'below': gt_below, 'above': gt_above}
+
+### Bloco 4.3 – Predicado Fuzzy de Estabilidade e Regra Complexa de Empilhamento
+
+Este bloco define a **lógica neuro-simbólica** para determinar se dois objetos podem ser **empilhados com segurança**, combinando uma função matemática de estabilidade com regras lógicas qualitativas.
+
+---
+
+#### Estabilidade Horizontal (`StableXFunc`)
+
+A estabilidade é modelada como um **predicado fuzzy**, ou seja, retorna um **grau de verdade** em vez de um simples `sim` ou `não`.
+
+- **Entrada:** As coordenadas X dos objetos (`x_x` e `y_x`).
+- **Função Matemática:**
+\[
+f(x, y) = \exp(-\text{scale} \cdot (x_x - y_x)^2)
+\]
+- **Comportamento:**  
+  - Se os centros estão perfeitamente alinhados (`dx = 0`), a saída é `1.0` (estabilidade máxima).  
+  - À medida que o desalinhamento aumenta, o valor decresce suavemente em direção a `0.0`.
+- **Parâmetro Aprendível:**  
+  - `scale` é definido como `nn.Parameter` e permite que o modelo **aprenda a tolerância ideal de desalinhamento** durante o treinamento.
+
+---
+
+#### Regra Composta de Empilhamento (`canStack`)
+
+O predicado `canStack(x, y)` combina **quatro condições** para determinar se é seguro empilhar `x` sobre `y`:
+
+1. **Base Válida:** O objeto de baixo **não pode ser Cone nem Triângulo**.
+2. **Tamanho Compatível:** Ambos os objetos devem ser do mesmo tamanho (`Small/Small` ou `Big/Big`).
+3. **Posição Vertical:** O objeto superior (`x`) deve estar **acima** do inferior (`y`).
+4. **Estabilidade Horizontal:** Os centros devem estar **aproximadamente alinhados**, ou seja, `stableX(x, y)` alto.
+
+- A função implementa um **soft-threshold** (`min_stability`) para penalizar desalinhamentos moderados de forma suave, sem decisões binárias rígidas.
+
+---
+
+### Bloco 4.4 – Definição dos Axiomas de Raciocínio Vertical
+
+Este bloco implementa os **axiomas lógicos** que regem o comportamento espacial do modelo.  
+Em **Logic Tensor Networks (LTN)**, os axiomas funcionam como **restrições** que guiam o aprendizado, garantindo que a rede neural respeite **leis geométricas e lógicas**, indo além de simples exemplos de treinamento.
+
+---
+
+#### Tipos de Axiomas Implementados
+
+O raciocínio vertical é estruturado em **quatro pilares principais**:
+
+1. **Relação Inversa**
+   - Define que se um objeto \(x\) está abaixo de \(y\), então necessariamente \(y\) está acima de \(x\):
+   \[
+   below(x, y) \iff above(y, x)
+   \]
+
+2. **Transitividade**
+   - Garante a hierarquia espacial:
+   \[
+   (below(x, y) \land below(y, z)) \implies below(x, z)
+   \]
+
+3. **Supervisionamento Positivo**
+   - Força o modelo a atribuir **alto grau de verdade** para pares confirmados pelo ground truth como corretos:
+   - Exemplo: se o ground truth indica que `x` está abaixo de `y`, então `below(x, y)` deve ter valor próximo de 1.
+
+4. **Supervisionamento Negativo**
+   - Força o modelo a atribuir **baixo grau de verdade** para pares fisicamente impossíveis ou incorretos, utilizando o operador `Not` do LTN:
+   - Exemplo: se `x` não está abaixo de `y` no ground truth, então `Not(below(x, y))` deve ser avaliado próximo de 1.
+
+---
+
+> Esses axiomas formam a base para o **treinamento neuro-simbólico**, permitindo que o modelo aprenda relações verticais de forma consistente, mesmo em casos não vistos explicitamente nos dados.
+
+### Bloco 4.5 – Processo de Treinamento dos Predicados Verticais
+
+Este bloco implementa o **loop de treinamento** para otimizar os modelos de rede neural que representam os **predicados verticais**.  
+Ao contrário do treinamento supervisionado clássico, o objetivo aqui é **maximizar a satisfatibilidade (Sat)** de um conjunto de fórmulas lógicas.
+
+---
+
+#### Mecânica de Otimização Lógica
+
+1. **Loss Semântica**
+   - Em vez de comparar a saída da rede com rótulos fixos, calcula-se **o quão bem as predições da rede respeitam os axiomas** (ex.: transitividade, relação inversa).
+
+2. **Objetivo**
+   - Maximizar a satisfação dos axiomas:
+   \[
+   Sat \to 1.0
+   \]
+
+3. **Função de Perda**
+   - Definida como:
+   \[
+   Loss = 1.0 - Sat
+   \]
+   - Quanto maior a satisfação, menor a perda.
+
+4. **Fluxo de Gradiente**
+   - O erro flui **dos axiomas lógicos de volta para os pesos** das redes neurais `below_model` e `above_model`.
+   - Dessa forma, os modelos aprendem a respeitar a lógica vertical, mesmo sem supervisionamento direto sobre cada par.
+
+---
+
+> Este paradigma garante que o aprendizado seja **neuro-simbólico**, integrando raciocínio lógico com ajuste de parâmetros de redes neurais.
+
+### Bloco 4.6 – Avaliação de Desempenho dos Predicados Verticais
+
+Este bloco mede a **qualidade do aprendizado** após o treinamento, comparando as predições **fuzzy** das redes neurais com o **Ground Truth** geométrico, utilizando métricas padrão de classificação binária.
+
+---
+
+#### Fluxo de Avaliação
+
+1. **Modo de Inferência**
+   - O código é executado com `torch.no_grad()`, garantindo que **nenhum gradiente seja calculado** e que os pesos permaneçam inalterados.
+
+2. **Percorrendo Pares de Objetos**
+   - Para cada par de objetos `(i, j)` no dataset:
+     - A diagonal principal `(i = j)` é ignorada.
+     - São avaliadas as relações `below(i, j)` e `above(i, j)`.
+
+3. **Conversão para Decisão Binária**
+   - As predições fuzzy (valores entre 0 e 1) são convertidas em rótulos binários:
+     \[
+     \text{Predição} =
+     \begin{cases}
+     1 & \text{se valor > 0.5} \\
+     0 & \text{caso contrário}
+     \end{cases}
+     \]
+
+4. **Cálculo de Métricas**
+   - **Acurácia:** Proporção de pares corretamente classificados.
+   - **Precisão:** Fração de predições positivas corretas.
+   - **Recall (Revocação):** Fração de positivos reais corretamente identificados.
+   - **F1-Score:** Harmônica entre precisão e recall.
+   - **SatAgg:** Satisfação agregada dos axiomas verticais, indicando coerência lógica.
+
+---
+
+> O resultado permite avaliar não apenas a **precisão numérica**, mas também a **consistência lógica** do modelo, essencial em raciocínio neuro-simbólico.
+
+### Bloco 4.7 – Orquestração do Raciocínio Vertical
+
+Este bloco define a função principal que gerencia o **ciclo completo** da Tarefa 3, funcionando como um **pipeline coordenador** que integra geração de dados, treinamento neuro-simbólico e avaliação.
+
+---
+
+#### Fluxo do Pipeline
+
+1. **Geração de Ground Truth**
+   - Extrai as relações reais `below` e `above` a partir das coordenadas Y do `data_tensor`.
+   - Serve como referência para que o modelo aprenda a relação vertical correta entre os objetos.
+
+2. **Treinamento Semântico**
+   - Executa o loop de treinamento dos predicados verticais (`below_model` e `above_model`).
+   - O gradiente é derivado da **satisfação dos axiomas lógicos**, garantindo coerência geométrica e respeito às leis de inversão e transitividade.
+
+3. **Avaliação Quantitativa**
+   - Calcula métricas clássicas de classificação binária:
+     - **Acurácia**, **Precisão**, **Recall**, **F1-Score**.
+   - Também reporta o **SatAgg**, que indica a consistência lógica final do modelo.
+   - Permite validar se o modelo aprendeu corretamente tanto os conceitos quantitativos (posições relativas) quanto qualitativos (relações lógicas verticais).
+
+---
+
+> Esta função central garante que o raciocínio vertical seja executado de forma **integrada e interpretável**, combinando aprendizado profundo e lógica simbólica.
+
 # 5 - Tarefa: Raciocínio Composto
 
 # 6 - Função Principal
