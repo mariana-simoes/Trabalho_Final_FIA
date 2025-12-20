@@ -849,7 +849,7 @@ Observe que o modelo **não foi treinado explicitamente** com rótulos referente
 
 Caso o valor retornado seja próximo de **1.0**, isso indica que a inferência foi bem-sucedida, evidenciando que o sistema neuro-simbólico conseguiu **generalizar e raciocinar corretamente**, indo além do aprendizado supervisionado direto.
 
-### 4 - Tarefa: Racicínio Vertical
+# 4 - Tarefa: Racicínio Vertical
 ### Bloco 4.1 – Definição dos Predicados de Relação Vertical
 
 Este bloco de código é responsável por definir a **arquitetura da rede neural profunda** que serve como base para os **predicados lógicos de orientação espacial vertical**, especificamente **Abaixo (*Below*)** e **Acima (*Above*)**.  
