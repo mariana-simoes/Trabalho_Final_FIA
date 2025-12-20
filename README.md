@@ -56,7 +56,7 @@ Uma característica central do CLEVR é a disponibilidade de **anotações estru
 
 A partir deste ponto, o texto apresenta comentários e explicações diretamente associados ao código-fonte, com o objetivo de descrever suas definições, estrutura e funcionamento. As seções a seguir estão organizadas de forma a acompanhar a lógica do código apresentado.
 
-### 1 — Definições
+# 1 — Definições
 
 #### Bloco 1.1 — Instalação das bibliotecas principais
 
@@ -285,7 +285,7 @@ O processo busca maximizar a consistência lógica global das predições em rel
 
 
 
-### 3 - Tarefa: Raciocínio Espacial e Horizontal
+# 3 - Tarefa: Raciocínio Espacial e Horizontal
 
 #### Bloco 3.1 – Definição de Predicados para Raciocínio Espacial
 
