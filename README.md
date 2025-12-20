@@ -930,3 +930,120 @@ O loop executa `dataset_num = 1..5` e, para cada dataset:
 8. **Cache para explicabilidade**
    - Salva dados, predições, rótulos e matrizes relacionais em `explanation_cache` para depuração/análises posteriores.
 
+# 8 - Explicabilidade em Linguagem Natural
+
+Este trecho gera **explicações textuais** (em linguagem natural) para o raciocínio do modelo sobre os **5 datasets de teste**, usando os resultados previamente armazenados em `explanation_cache`. A saída é organizada por dataset e cobre:
+
+- **Formas** (explicando a classe prevista e o score associado)
+- **Tamanhos** (comparando os graus de verdade de `small` vs `big`)
+- **Raciocínio espacial** (horizontal, vertical e composto via `inBetween`)
+- **Raciocínio composto** (queries de maior nível que combinam predicados)
+
+## 1) Deduplicação de experimentos -
+
+Como `explanation_cache` pode conter entradas repetidas, o código cria um dicionário `unique_experiments` indexado por `dataset`, garantindo que **cada dataset apareça uma única vez**:
+
+- chave: `exp["dataset"]`
+- valor: o próprio dicionário `exp` com dados, predições e ground-truth
+
+Em seguida, imprime um cabeçalho e percorre os datasets em ordem crescente.
+
+## 2) Recuperação de artefatos do cache -
+
+Para cada `dataset_id`, o código recupera do cache:
+
+- `data`, `data_d`: dados no CPU e no dispositivo (ex.: GPU), respectivamente
+- `shape_preds`, `shape_gt`: scores por forma (N×5) e rótulo verdadeiro (argmax)
+- `small_preds`, `big_preds`, `small_gt`: scores de tamanho e ground-truth binário
+- matrizes de ground-truth relacional: `gt_left`, `gt_right`, `gt_above` (e outras se existirem)
+
+Essas variáveis são usadas para compor as explicações em texto.
+
+## 3) Explicações para formas -
+
+Para os **primeiros 2 objetos** do dataset (ou menos, se `len(data) < 2`), o código:
+
+- escolhe a classe prevista com `pred = argmax(shape_preds[i])`
+- imprime uma justificativa do tipo:
+  - “foi classificado como X porque teve a maior ativação para essa forma (score)”
+- também informa o **rótulo verdadeiro** (`shape_gt[i]`) para comparação.
+
+## 4) Explicações para tamanhos -
+
+Para os **primeiros 2 objetos**, o código decide o tamanho previsto comparando os scores:
+
+- `pred = "small"` se `small_p[i] >= big_p[i]`, senão `"big"`
+- reporta o **grau de verdade vencedor** (`max(small_p[i], big_p[i])`)
+- exibe também o tamanho real a partir de `small_gt[i]`:
+  - `small` se `small_gt[i] == 1`
+  - `big` caso contrário
+
+## 5) Helper para converter um objeto em `ltn.Constant` -
+
+Objetivo: transformar a linha `idx` do dataset em um objeto consumível pelos predicados LTN.
+
+Comportamento:
+- se `data_d_like` já for um `LTNObject` (tem `.value`), usa o tensor interno
+- seleciona a linha `idx`
+- garante o shape `[1, features]` (`unsqueeze(0)` se necessário)
+- retorna `ltn.Constant(row)`
+
+Isso facilita chamar predicados como `leftOf(di, dj)`/`above(di, dj)`/`inBetween(di, dj, dk)`.
+
+## 6) Raciocínio espacial — Horizontal (`leftOf`) -
+
+O exemplo usa os objetos `i=0` e `j=1`:
+- extrai `xi = x(i)` e `xj = x(j)` a partir de `data`
+- calcula `score = leftOf(di, dj)` com `torch.no_grad()`
+
+A explicação compara:
+- **decisão do modelo** (`score >= 0.5` → verdadeiro/falso)
+- **justificativa geométrica** (comparação entre `xi` e `xj`)
+- **ground-truth** `gt_left[i, j]` como “valor geométrico real”
+
+## 7 Raciocínio espacial — Composto (`inBetween`) -
+
+O exemplo usa `i=0`, `j=1`, `k=2`:
+- extrai `x(i)`, `x(j)`, `x(k)`
+- computa `score = inBetween(di, dj, dk)`
+
+Em seguida, traduz a condição lógica em termos geométricos:
+- `cond1 = (xj < xi < xk)`
+- `cond2 = (xk < xi < xj)`
+
+A explicação descreve o “ou… ou…” do predicado e afirma se, **pelos valores de x**, a proposição é verdadeira ou falsa.
+
+## 8) Raciocínio espacial — Vertical (`above`) -
+
+Com `i=0`, `j=1`:
+- extrai `yi = y(i)` e `yj = y(j)`
+- computa `score = above(di, dj)`
+
+A explicação segue o mesmo padrão do horizontal:
+- decisão por threshold (verdadeiro/falso)
+- comparação geométrica `yi > yj`
+- ground-truth `gt_above[i, j]`
+
+## 9) Raciocínio composto (Queries) -
+
+Executa três queries (sob `torch.no_grad()`), obtendo um **grau de satisfação** (`q*.item()`), e gera explicações em texto:
+
+- **Query 1 — `query_compound_filtering(data)`**  
+  Verifica existência de um objeto **pequeno** que esteja **abaixo de um cilindro** e **à esquerda de um quadrado**.  
+  Interpretação: `q1_score > 0.5` indica condição satisfeita.
+
+- **Query 2 — `query_green_cone_between(data)`**  
+  Procura um **cone verde** posicionado **entre** dois objetos.  
+  Interpretação: `q2_score > 0.5` indica que o modelo “encontrou” a configuração.
+
+- **Query 3 — `query_triangles_close_same_size(data)`**  
+  Avalia a regra: **triângulos próximos** devem ter o **mesmo tamanho**.  
+  Interpretação: usa um threshold mais estrito (`> 0.7`) para indicar regra “respeitada”; caso contrário, “possui violações”.
+
+## Saída esperada -
+
+A execução imprime, para cada dataset:
+- exemplos de explicação para **2 objetos** (formas e tamanhos)
+- um exemplo de explicação para **leftOf(0,1)**, **inBetween(0,1,2)** e **above(0,1)**
+- interpretação textual das **3 queries compostas** com seus graus
+
