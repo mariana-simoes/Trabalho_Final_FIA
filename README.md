@@ -321,7 +321,7 @@ Este bloco integra todas as etapas da Tarefa 2:
 
 Retorna o histórico de treinamento e os resultados de avaliação para análise posterior.
 
-# 4 - Tarefa: Raciocínio Espacial Vertical com Abordagem Neuro-Simbólica
+### 4 - Tarefa: Raciocínio Espacial Vertical com Abordagem Neuro-Simbólica
 
 Esta tarefa apresenta um sistema de **Inteligência Artificial Neuro-Simbólica** que integra **redes neurais profundas** com **Lógica de Primeira Ordem Suave**, implementada por meio de **Logic Tensor Networks (LTN)**.  
 O objetivo central é capacitar o modelo a **aprender, representar e raciocinar** sobre relações espaciais verticais e restrições físicas elementares, de forma consistente, interpretável e logicamente fundamentada.
@@ -334,7 +334,7 @@ As relações consideradas nesta tarefa incluem:
 
 ---
 
-## Bloco 4.1 – Arquitetura Neural para Inferência Relacional Vertical  
+#### Bloco 4.1 – Arquitetura Neural para Inferência Relacional Vertical  
 ### `VerticalRelationPredictor`
 
 Este bloco define o componente neural responsável por modelar relações binárias entre pares de objetos. O modelo adotado é um **Perceptron Multicamadas (MLP)**, projetado para operar como um **predicado lógico fuzzy**, produzindo graus contínuos de verdade.
@@ -358,7 +358,7 @@ Formalmente, a saída do modelo representa:
 
 ---
 
-## Bloco 4.2 – Construção do Ground Truth Vertical
+#### Bloco 4.2 – Construção do Ground Truth Vertical
 
 Antes do processo de aprendizado, é necessário estabelecer uma referência objetiva de verdade baseada na geometria do ambiente. Para isso, define-se um **ground truth determinístico** a partir das coordenadas verticais dos objetos.
 
@@ -382,7 +382,7 @@ Essas matrizes são utilizadas tanto para **supervisão direta** quanto para val
 
 ---
 
-## Bloco 4.3 – Definição do Predicado Físico `canStack(x, y)`
+#### Bloco 4.3 – Definição do Predicado Físico `canStack(x, y)`
 
 O predicado `canStack` modela conhecimento físico básico e não é aprendido por uma rede neural. Em vez disso, ele é definido explicitamente por meio de **regras lógicas fuzzy**, refletindo princípios elementares de estabilidade e equilíbrio.
 
@@ -408,7 +408,7 @@ O resultado final é um valor contínuo que expressa o **grau de plausibilidade 
 
 ---
 
-## Bloco 4.4 – Formulação dos Axiomas Lógicos Verticais  
+#### Bloco 4.4 – Formulação dos Axiomas Lógicos Verticais  
 ### `vertical_axioms`
 
 Este bloco constitui o núcleo simbólico do sistema, no qual são definidos axiomas universais que devem ser respeitados pelas predições neurais.
@@ -443,7 +443,7 @@ As inferências relacionadas ao empilhamento são avaliadas de acordo com as reg
 
 ---
 
-## Bloco 4.5 – Processo de Treinamento Baseado em Satisfatibilidade  
+#### Bloco 4.5 – Processo de Treinamento Baseado em Satisfatibilidade  
 ### `train_vertical_predicates`
 
 O treinamento do sistema não visa minimizar uma função de erro tradicional, mas sim **maximizar o grau médio de satisfação dos axiomas lógicos**.
@@ -457,7 +457,7 @@ A otimização é realizada com o algoritmo Adam, ajustando simultaneamente os p
 
 ---
 
-## Bloco 4.6 – Avaliação Quantitativa e Verificação Semântica  
+#### Bloco 4.6 – Avaliação Quantitativa e Verificação Semântica  
 ### `evaluate_vertical_predicates`
 
 A avaliação do sistema combina métricas estatísticas tradicionais com testes de coerência lógica.
@@ -477,7 +477,7 @@ Essa abordagem garante que o sistema não apenas obtenha bom desempenho numéric
 
 ---
 
-## Bloco 4.7 – Coordenação do Processo Neuro-Simbólico de Aprendizado e Inferência  
+#### Bloco 4.7 – Coordenação do Processo Neuro-Simbólico de Aprendizado e Inferência  
 ### `run_task3_complete`
 
 Este bloco atua como o **mecanismo de coordenação global** do sistema. Ele encapsula e integra todas as etapas do processo neuro-simbólico, incluindo:
