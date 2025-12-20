@@ -331,7 +331,6 @@ A classe `SpatialPredicate` atua como uma **ponte entre o domínio simbólico da
 
 ##### Predicados Espaciais Aprendíveis: `leftOf` e `rightOf`
 
-```python
 leftOf = ltn.Predicate(SpatialPredicate(leftOf_model))
 rightOf = ltn.Predicate(SpatialPredicate(rightOf_model))
 
@@ -372,7 +371,6 @@ Enquanto o bloco anterior definiu os modelos responsáveis por **aprender** as r
 
 #### Gestão de Memória e Dispositivos (CPU/GPU)
 
-```python
 if data_tensor.is_cuda:
     data_cpu = data_tensor.cpu()
 
@@ -543,9 +541,9 @@ Nesta etapa, o **Logic Tensor Network (LTN)** utiliza um procedimento de otimiza
 
 #### Preparação do Otimizador e dos Parâmetros
 
-```python
 parameters = list(leftOf_model.parameters()) + list(rightOf_model.parameters())
 optimizer = torch.optim.Adam(parameters, lr=lr)
+
 #### Fusão de Parâmetros e Estratégia de Otimização
 
 - **Fusão de Parâmetros**  
@@ -596,23 +594,15 @@ O treinamento busca **maximizar a coerência lógica**, e não apenas minimizar 
 
 Para garantir estabilidade e evitar falhas silenciosas durante o treinamento, o código inclui diversas salvaguardas:
 
-- **Clamping da Satisfação**
-  ```python
-  torch.clamp(sat, 0.0, 1.0): Este mecanismo assegura que, mesmo na presença de **erros numéricos de ponto flutuante** inerentes à computação em precisão finita, o valor de satisfação permaneça estritamente dentro do **intervalo lógico permitido \([0, 1]\)**. Isso é fundamental para preservar a interpretação semântica dos valores de verdade no contexto da **lógica fuzzy**, evitando estados inválidos que poderiam comprometer tanto o treinamento quanto a avaliação do modelo.
+- **Clamping da Satisfação** (torch.clamp(sat, 0.0, 1.0): Este mecanismo assegura que, mesmo na presença de **erros numéricos de ponto flutuante** inerentes à computação em precisão finita, o valor de satisfação permaneça estritamente dentro do **intervalo lógico permitido \([0, 1]\)**. Isso é fundamental para preservar a interpretação semântica dos valores de verdade no contexto da **lógica fuzzy**, evitando estados inválidos que poderiam comprometer tanto o treinamento quanto a avaliação do modelo.
 - **Verificação de Gradiente (`requires_grad`)**: Este é um ponto crítico do processo de treinamento. Caso a função de perda não esteja computacionalmente conectada aos pesos do modelo — por exemplo, se os dados não forem efetivamente propagados através da rede neural — o PyTorch não conseguirá calcular os gradientes necessários para a otimização. O código inclui verificações explícitas para detectar essa situação e emitir alertas, prevenindo o fenômeno conhecido como **“treinamento fantasma”**, no qual o processo de aprendizagem aparenta ocorrer, mas nenhum parâmetro é, de fato, atualizado.
 
 #### Fluxo de Execução por Época
 
-- **Zeragem dos Gradientes**
-  ```python
-  optimizer.zero_grad(): Este comando limpa os gradientes acumulados do cálculo anterior, garantindo que a atualização dos parâmetros na época atual seja baseada exclusivamente nas informações recém-computadas. Essa etapa é essencial para evitar que contribuições residuais de iterações passadas distorçam o processo de otimização.
+- **Zeragem dos Gradientes** (optimizer.zero_grad()): Este comando limpa os gradientes acumulados do cálculo anterior, garantindo que a atualização dos parâmetros na época atual seja baseada exclusivamente nas informações recém-computadas. Essa etapa é essencial para evitar que contribuições residuais de iterações passadas distorçam o processo de otimização.
 - **Avaliação Lógica**: Nesta etapa, o modelo avalia os **axiomas lógicos** definidos no sistema, verificando o grau de verdade das relações espaciais em relação aos dados atuais. Em termos conceituais, o sistema “lê” o conjunto de regras lógicas e mede o quanto suas inferências satisfazem essas leis, produzindo um valor contínuo de satisfação que orienta o processo de aprendizado.
-- **Retropropagação dos Gradientes**
-  ```python
-  loss.backward(): Nesta etapa, o mecanismo de diferenciação automática do PyTorch calcula como cada peso da rede neural contribuiu para a insatisfação lógica (isto é, para a violação dos axiomas). A partir desse cálculo, são determinados os gradientes que indicam como e em que direção os parâmetros devem ser ajustados, de modo a reduzir a insatisfação e aproximar o modelo de um estado de maior coerência lógica.
-- **Atualização dos Parâmetros**
-  ```python
-  optimizer.step(): Este comando aplica as atualizações calculadas durante a retropropagação, ajustando os pesos da rede neural de acordo com o algoritmo de otimização escolhido. Como resultado, os parâmetros passam a refletir melhor as restrições impostas pelos axiomas lógicos, aumentando o grau de satisfação das relações espaciais na próxima iteração de treinamento.
+- **Retropropagação dos Gradientes** (loss.backward()): Nesta etapa, o mecanismo de diferenciação automática do PyTorch calcula como cada peso da rede neural contribuiu para a insatisfação lógica (isto é, para a violação dos axiomas). A partir desse cálculo, são determinados os gradientes que indicam como e em que direção os parâmetros devem ser ajustados, de modo a reduzir a insatisfação e aproximar o modelo de um estado de maior coerência lógica.
+- **Atualização dos Parâmetros** (optimizer.step()): Este comando aplica as atualizações calculadas durante a retropropagação, ajustando os pesos da rede neural de acordo com o algoritmo de otimização escolhido. Como resultado, os parâmetros passam a refletir melhor as restrições impostas pelos axiomas lógicos, aumentando o grau de satisfação das relações espaciais na próxima iteração de treinamento.
 
 #### Monitoramento e Histórico de Aprendizado
 
@@ -628,9 +618,8 @@ Esta função corresponde ao **estágio final de avaliação** do modelo neuro-s
 
 #### Desativação do Gradiente e Avaliação da Coesão Lógica
 
-```python
-with torch.no_grad():
-    sat_axioms = spatial_axioms_horizontal(data_tensor, ground_truth)
+with torch.no_grad(): sat_axioms = spatial_axioms_horizontal(data_tensor, ground_truth)
+    
 - **`torch.no_grad()`**: Indica ao PyTorch que o modelo está em modo de inferência, e não mais em treinamento. Nesse contexto, o framework deixa de rastrear operações para o cálculo de derivadas, o que reduz significativamente o consumo de memória e o custo computacional, tornando a avaliação mais eficiente.
 
 - **Consistência Lógica (SatAgg)**: O primeiro passo da avaliação consiste na análise do valor de **Satisfação Agregada (SatAgg)**. Esse indicador quantifica o grau em que o modelo treinado respeita, sobre os dados de teste, as leis formais da geometria espacial — como transitividade, assimetria e irreflexividade — indo além da simples correção estatística das predições.
@@ -646,9 +635,7 @@ Os predicados em LTN não operam apenas sobre valores numéricos, mas sobre elem
 - Manter a consistência dimensional esperada pelos predicados;
 - Permitir que as fórmulas lógicas sejam avaliadas de forma coerente e bem definida.
 
-No código, esse encapsulamento é realizado **objeto por objeto**, conforme ilustrado abaixo:
-
-```python
+No código, esse encapsulamento é realizado **objeto por objeto**, conforme ilustrado abaixo: 
 x_var = ltn.Variable(..., data_device[i:i+1]).
 
 #### Extração e Normalização de Valores
@@ -710,7 +697,7 @@ Este bloco evidencia a **flexibilidade e expressividade das Logic Tensor Network
 
 ---
 
-#### 3.6.1 Predicado Composto: `inBetween(x, y, z)`
+#### Predicado Composto: `inBetween(x, y, z)`
 
 O predicado `inBetween` formaliza o conceito geométrico de **“estar entre” no eixo horizontal**, utilizando apenas relações previamente aprendidas (`leftOf` e `rightOf`).
 
@@ -740,7 +727,7 @@ Essa definição garante **simetria** em relação a \( y \) e \( z \), refletin
 
 ---
 
-#### 3.6.2 Consulta Lógica: `query_leftmost_object` (Objeto Mais à Esquerda)
+#### Consulta Lógica: `query_leftmost_object` (Objeto Mais à Esquerda)
 
 Esta função implementa uma **consulta existencial-universal**, buscando o objeto que melhor satisfaz a propriedade de ser o mais à esquerda no conjunto.
 
@@ -765,7 +752,7 @@ O objeto mais à esquerda é aquele que está à esquerda de **todos os outros o
 
 ---
 
-#### 3.6.3 Consulta Lógica: `query_rightmost_object` (Objeto Mais à Direita)
+#### Consulta Lógica: `query_rightmost_object` (Objeto Mais à Direita)
 
 Esta consulta é **estruturalmente simétrica** à anterior, substituindo apenas o predicado `leftOf` por `rightOf`.
 
@@ -782,7 +769,7 @@ Esta consulta é **estruturalmente simétrica** à anterior, substituindo apenas
 
 ---
 
-#### 3.6.4 Detalhes Técnicos de Implementação
+#### Detalhes Técnicos de Implementação
 
 Alguns aspectos técnicos são cruciais para o funcionamento correto dessas consultas:
 
@@ -802,7 +789,7 @@ Alguns aspectos técnicos são cruciais para o funcionamento correto dessas cons
 
 ---
 
-#### 3.6.5 Importância Conceitual do Bloco
+#### Importância Conceitual do Bloco
 
 Este bloco marca a transição do sistema de:
 - **Predição de relações locais**,  
@@ -824,7 +811,6 @@ Este bloco descreve a função **`run_task2_complete`**, que atua como o **ponto
 
 #### Inicialização do Ground Truth Espacial
 
-```python
 ground_truth = compute_spatial_ground_truth(data_tensor, threshold_close=0.35)
 
 A primeira etapa não envolve aprendizado por IA, mas sim **geometria determinística**. O sistema analisa diretamente as coordenadas reais dos objetos e, a partir delas, constrói as **matrizes de referência (ground truth)** que representam o gabarito geométrico do cenário. Esse gabarito é fundamental, pois fornece um **sinal supervisório explícito** que orienta o ajuste dos pesos dos modelos neurais na etapa subsequente, funcionando como um critério objetivo de verdade espacial.
@@ -853,7 +839,6 @@ Nesta etapa, evidencia-se de forma concreta o **potencial do raciocínio neuro-s
 
 O estágio final do pipeline consiste na verificação de um **predicado de ordem superior**, especificamente um predicado de **aridade 3**, que envolve simultaneamente três objetos do cenário espacial.
 
-```python
 pred = inBetween(data_tensor[19], data_tensor[0], data_tensor[2])
 
 **O que ocorre nesta etapa:**  
@@ -864,170 +849,3 @@ Observe que o modelo **não foi treinado explicitamente** com rótulos referente
 
 Caso o valor retornado seja próximo de **1.0**, isso indica que a inferência foi bem-sucedida, evidenciando que o sistema neuro-simbólico conseguiu **generalizar e raciocinar corretamente**, indo além do aprendizado supervisionado direto.
 
-### 4 - Tarefa: Raciocínio Espacial Vertical com Abordagem Neuro-Simbólica
-
-Esta tarefa apresenta um sistema de **Inteligência Artificial Neuro-Simbólica** que integra **redes neurais profundas** com **Lógica de Primeira Ordem Suave**, implementada por meio de **Logic Tensor Networks (LTN)**.  
-O objetivo central é capacitar o modelo a **aprender, representar e raciocinar** sobre relações espaciais verticais e restrições físicas elementares, de forma consistente, interpretável e logicamente fundamentada.
-
-Diferentemente de abordagens puramente conexionistas, o modelo não se limita à minimização de um erro estatístico. Em vez disso, o aprendizado é guiado pela **maximização da satisfação de axiomas lógicos**, que codificam propriedades geométricas e físicas invariantes do domínio.
-
-As relações consideradas nesta tarefa incluem:
-- **Relações espaciais verticais**: `below(x, y)` e `above(x, y)`
-- **Relações físicas de empilhamento**: `canStack(x, y)`
-
----
-
-#### Bloco 4.1 — Arquitetura Neural para Inferência Relacional Vertical  
-#### `VerticalRelationPredictor`
-
-Este bloco define o componente neural responsável por modelar relações binárias entre pares de objetos. O modelo adotado é um **Perceptron Multicamadas (MLP)**, projetado para operar como um **predicado lógico fuzzy**, produzindo graus contínuos de verdade.
-
-#### Estrutura da Rede
-
-A rede recebe como entrada um vetor de dimensão 22, resultante da concatenação dos atributos de dois objetos distintos. Cada objeto é descrito por um conjunto fixo de características geométricas, espaciais e semânticas.
-
-A arquitetura é composta por:
-- Camadas lineares com 64, 32 e 16 neurônios
-- Função de ativação ReLU em todas as camadas ocultas
-- Camadas de Dropout com taxas de 0.3 e 0.2, introduzidas para reduzir sobreajuste
-- Camada de saída com ativação Sigmoid
-
-A função Sigmoid é fundamental no contexto das LTN, pois garante que a saída do modelo pertença ao intervalo contínuo \([0, 1]\), interpretável como um **grau de verdade lógico**.
-
-Formalmente, a saída do modelo representa:
-\[
-\mu_{below}(x, y) \in [0,1] \quad \text{ou} \quad \mu_{above}(x, y) \in [0,1]
-\]
-
----
-
-#### Bloco 4.2 — Construção do Ground Truth Vertical
-
-Antes do processo de aprendizado, é necessário estabelecer uma referência objetiva de verdade baseada na geometria do ambiente. Para isso, define-se um **ground truth determinístico** a partir das coordenadas verticais dos objetos.
-
-#### Definição Formal
-
-Seja \(y_i\) a coordenada vertical do objeto \(i\):
-
-- Relação *below*:
-\[
-below(i, j) \iff y_i < y_j
-\]
-
-- Relação *above*:
-\[
-above(i, j) \iff y_i > y_j
-\]
-
-A função `compute_vertical_ground_truth` avalia todos os pares ordenados de objetos e constrói duas matrizes booleanas \(N \times N\), que funcionam como **matrizes de adjacência direcionadas** para as relações verticais.
-
-Essas matrizes são utilizadas tanto para **supervisão direta** quanto para validação empírica dos predicados aprendidos.
-
----
-
-#### Bloco 4.3 — Definição do Predicado Físico `canStack(x, y)`
-
-O predicado `canStack` modela conhecimento físico básico e não é aprendido por uma rede neural. Em vez disso, ele é definido explicitamente por meio de **regras lógicas fuzzy**, refletindo princípios elementares de estabilidade e equilíbrio.
-
-#### Condições para Empilhamento
-
-Um objeto \(x\) pode ser empilhado sobre um objeto \(y\) se, e somente se, as seguintes condições forem satisfeitas:
-
-#### Base Estável
-O objeto inferior \(y\) não pode possuir geometria pontiaguda, como cones ou triângulos, pois essas formas comprometem a estabilidade estrutural.
-
-#### Condições de Equilíbrio
-O empilhamento é considerado viável se existir:
-- Compatibilidade dimensional entre \(x\) e \(y\), ou
-- Alinhamento horizontal suficiente entre seus centroides
-
-#### Operadores Lógicos Suaves
-
-- Conjunção lógica (∧): multiplicação
-- Disjunção lógica (∨): operador máximo
-- Negação (¬): complemento
-
-O resultado final é um valor contínuo que expressa o **grau de plausibilidade física** do empilhamento.
-
----
-
-#### Bloco 4.4 — Formulação dos Axiomas Lógicos Verticais  
-#### `vertical_axioms`
-
-Este bloco constitui o núcleo simbólico do sistema, no qual são definidos axiomas universais que devem ser respeitados pelas predições neurais.
-
-#### Axioma 1 – Relação Inversa
-\[
-\forall x, y \; (below(x, y) \leftrightarrow above(y, x))
-\]
-
-Esse axioma garante consistência semântica entre os dois predicados verticais.
-
----
-
-#### Axioma 2 – Transitividade
-\[
-\forall i, j, k \; (below(i, j) \land below(j, k) \rightarrow below(i, k))
-\]
-
-Esse princípio assegura coerência global das relações espaciais inferidas.
-
----
-
-#### Axioma 3 – Supervisão Positiva e Negativa
-
-As predições dos modelos `below_model` e `above_model` são explicitamente penalizadas quando divergem do ground truth geométrico, reforçando o alinhamento entre aprendizado estatístico e realidade física.
-
----
-
-#### Axioma 4 – Consistência do Predicado `canStack`
-
-As inferências relacionadas ao empilhamento são avaliadas de acordo com as regras físicas definidas, garantindo que o sistema não produza conclusões fisicamente implausíveis.
-
----
-
-#### Bloco 4.5 — Processo de Treinamento Baseado em Satisfatibilidade  
-#### `train_vertical_predicates`
-
-O treinamento do sistema não visa minimizar uma função de erro tradicional, mas sim **maximizar o grau médio de satisfação dos axiomas lógicos**.
-
-Seja \(Sat \in [0,1]\) a satisfação agregada dos axiomas. A função de perda é definida como:
-\[
-\mathcal{L} = 1 - Sat
-\]
-
-A otimização é realizada com o algoritmo Adam, ajustando simultaneamente os parâmetros dos modelos `below` e `above`.
-
----
-
-#### Bloco 4.6 — Avaliação Quantitativa e Verificação Semântica  
-#### `evaluate_vertical_predicates`
-
-A avaliação do sistema combina métricas estatísticas tradicionais com testes de coerência lógica.
-
-#### Métricas Quantitativas
-- Acurácia
-- Precisão
-- Recall
-- F1-score
-
-#### Verificações Semânticas
-- Identificação correta dos objetos mais alto e mais baixo
-- Validação da propriedade inversa entre `below` e `above`
-- Análise qualitativa do predicado `canStack`
-
-Essa abordagem garante que o sistema não apenas obtenha bom desempenho numérico, mas também mantenha **consistência conceitual**.
-
----
-
-#### Bloco 4.7 — Coordenação do Processo Neuro-Simbólico de Aprendizado e Inferência  
-#### `run_task3_complete`
-
-Este bloco atua como o **mecanismo de coordenação global** do sistema. Ele encapsula e integra todas as etapas do processo neuro-simbólico, incluindo:
-
-1. Construção do ground truth
-2. Inicialização e treinamento dos predicados neurais
-3. Avaliação quantitativa e lógica do sistema
-4. Retorno estruturado dos resultados experimentais
-
-Esse encapsulamento assegura reprodutibilidade, modularidade e clareza metodológica.
