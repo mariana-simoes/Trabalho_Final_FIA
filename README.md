@@ -320,3 +320,171 @@ Este bloco integra todas as etapas da Tarefa 2:
    - Realiza um teste de relação composta `inBetween(C2, Q1, Q3)` para verificar posição relativa entre objetos.
 
 Retorna o histórico de treinamento e os resultados de avaliação para análise posterior.
+
+# 4 - Tarefa: Raciocínio Espacial Vertical com Abordagem Neuro-Simbólica
+
+Esta tarefa apresenta um sistema de **Inteligência Artificial Neuro-Simbólica** que integra **redes neurais profundas** com **Lógica de Primeira Ordem Suave**, implementada por meio de **Logic Tensor Networks (LTN)**.  
+O objetivo central é capacitar o modelo a **aprender, representar e raciocinar** sobre relações espaciais verticais e restrições físicas elementares, de forma consistente, interpretável e logicamente fundamentada.
+
+Diferentemente de abordagens puramente conexionistas, o modelo não se limita à minimização de um erro estatístico. Em vez disso, o aprendizado é guiado pela **maximização da satisfação de axiomas lógicos**, que codificam propriedades geométricas e físicas invariantes do domínio.
+
+As relações consideradas nesta tarefa incluem:
+- **Relações espaciais verticais**: `below(x, y)` e `above(x, y)`
+- **Relações físicas de empilhamento**: `canStack(x, y)`
+
+---
+
+## Bloco 4.1 – Arquitetura Neural para Inferência Relacional Vertical  
+### `VerticalRelationPredictor`
+
+Este bloco define o componente neural responsável por modelar relações binárias entre pares de objetos. O modelo adotado é um **Perceptron Multicamadas (MLP)**, projetado para operar como um **predicado lógico fuzzy**, produzindo graus contínuos de verdade.
+
+### Estrutura da Rede
+
+A rede recebe como entrada um vetor de dimensão 22, resultante da concatenação dos atributos de dois objetos distintos. Cada objeto é descrito por um conjunto fixo de características geométricas, espaciais e semânticas.
+
+A arquitetura é composta por:
+- Camadas lineares com 64, 32 e 16 neurônios
+- Função de ativação ReLU em todas as camadas ocultas
+- Camadas de Dropout com taxas de 0.3 e 0.2, introduzidas para reduzir sobreajuste
+- Camada de saída com ativação Sigmoid
+
+A função Sigmoid é fundamental no contexto das LTN, pois garante que a saída do modelo pertença ao intervalo contínuo \([0, 1]\), interpretável como um **grau de verdade lógico**.
+
+Formalmente, a saída do modelo representa:
+\[
+\mu_{below}(x, y) \in [0,1] \quad \text{ou} \quad \mu_{above}(x, y) \in [0,1]
+\]
+
+---
+
+## Bloco 4.2 – Construção do Ground Truth Vertical
+
+Antes do processo de aprendizado, é necessário estabelecer uma referência objetiva de verdade baseada na geometria do ambiente. Para isso, define-se um **ground truth determinístico** a partir das coordenadas verticais dos objetos.
+
+### Definição Formal
+
+Seja \(y_i\) a coordenada vertical do objeto \(i\):
+
+- Relação *below*:
+\[
+below(i, j) \iff y_i < y_j
+\]
+
+- Relação *above*:
+\[
+above(i, j) \iff y_i > y_j
+\]
+
+A função `compute_vertical_ground_truth` avalia todos os pares ordenados de objetos e constrói duas matrizes booleanas \(N \times N\), que funcionam como **matrizes de adjacência direcionadas** para as relações verticais.
+
+Essas matrizes são utilizadas tanto para **supervisão direta** quanto para validação empírica dos predicados aprendidos.
+
+---
+
+## Bloco 4.3 – Definição do Predicado Físico `canStack(x, y)`
+
+O predicado `canStack` modela conhecimento físico básico e não é aprendido por uma rede neural. Em vez disso, ele é definido explicitamente por meio de **regras lógicas fuzzy**, refletindo princípios elementares de estabilidade e equilíbrio.
+
+### Condições para Empilhamento
+
+Um objeto \(x\) pode ser empilhado sobre um objeto \(y\) se, e somente se, as seguintes condições forem satisfeitas:
+
+#### Base Estável
+O objeto inferior \(y\) não pode possuir geometria pontiaguda, como cones ou triângulos, pois essas formas comprometem a estabilidade estrutural.
+
+#### Condições de Equilíbrio
+O empilhamento é considerado viável se existir:
+- Compatibilidade dimensional entre \(x\) e \(y\), ou
+- Alinhamento horizontal suficiente entre seus centroides
+
+### Operadores Lógicos Suaves
+
+- Conjunção lógica (∧): multiplicação
+- Disjunção lógica (∨): operador máximo
+- Negação (¬): complemento
+
+O resultado final é um valor contínuo que expressa o **grau de plausibilidade física** do empilhamento.
+
+---
+
+## Bloco 4.4 – Formulação dos Axiomas Lógicos Verticais  
+### `vertical_axioms`
+
+Este bloco constitui o núcleo simbólico do sistema, no qual são definidos axiomas universais que devem ser respeitados pelas predições neurais.
+
+### Axioma 1 – Relação Inversa
+\[
+\forall x, y \; (below(x, y) \leftrightarrow above(y, x))
+\]
+
+Esse axioma garante consistência semântica entre os dois predicados verticais.
+
+---
+
+### Axioma 2 – Transitividade
+\[
+\forall i, j, k \; (below(i, j) \land below(j, k) \rightarrow below(i, k))
+\]
+
+Esse princípio assegura coerência global das relações espaciais inferidas.
+
+---
+
+### Axioma 3 – Supervisão Positiva e Negativa
+
+As predições dos modelos `below_model` e `above_model` são explicitamente penalizadas quando divergem do ground truth geométrico, reforçando o alinhamento entre aprendizado estatístico e realidade física.
+
+---
+
+### Axioma 4 – Consistência do Predicado `canStack`
+
+As inferências relacionadas ao empilhamento são avaliadas de acordo com as regras físicas definidas, garantindo que o sistema não produza conclusões fisicamente implausíveis.
+
+---
+
+## Bloco 4.5 – Processo de Treinamento Baseado em Satisfatibilidade  
+### `train_vertical_predicates`
+
+O treinamento do sistema não visa minimizar uma função de erro tradicional, mas sim **maximizar o grau médio de satisfação dos axiomas lógicos**.
+
+Seja \(Sat \in [0,1]\) a satisfação agregada dos axiomas. A função de perda é definida como:
+\[
+\mathcal{L} = 1 - Sat
+\]
+
+A otimização é realizada com o algoritmo Adam, ajustando simultaneamente os parâmetros dos modelos `below` e `above`.
+
+---
+
+## Bloco 4.6 – Avaliação Quantitativa e Verificação Semântica  
+### `evaluate_vertical_predicates`
+
+A avaliação do sistema combina métricas estatísticas tradicionais com testes de coerência lógica.
+
+### Métricas Quantitativas
+- Acurácia
+- Precisão
+- Recall
+- F1-score
+
+### Verificações Semânticas
+- Identificação correta dos objetos mais alto e mais baixo
+- Validação da propriedade inversa entre `below` e `above`
+- Análise qualitativa do predicado `canStack`
+
+Essa abordagem garante que o sistema não apenas obtenha bom desempenho numérico, mas também mantenha **consistência conceitual**.
+
+---
+
+## Bloco 4.7 – Coordenação do Processo Neuro-Simbólico de Aprendizado e Inferência  
+### `run_task3_complete`
+
+Este bloco atua como o **mecanismo de coordenação global** do sistema. Ele encapsula e integra todas as etapas do processo neuro-simbólico, incluindo:
+
+1. Construção do ground truth
+2. Inicialização e treinamento dos predicados neurais
+3. Avaliação quantitativa e lógica do sistema
+4. Retorno estruturado dos resultados experimentais
+
+Esse encapsulamento assegura reprodutibilidade, modularidade e clareza metodológica.
