@@ -57,7 +57,8 @@ Uma característica central do CLEVR é a disponibilidade de **anotações estru
 A partir deste ponto, o texto apresenta comentários e explicações diretamente associados ao código-fonte, com o objetivo de descrever suas definições, estrutura e funcionamento. As seções a seguir estão organizadas de forma a acompanhar a lógica do código apresentado.
 
 ### 1 — Definições
-#### 1.1 Instalação das bibliotecas principais
+
+#### Bloco 1.1 — Instalação das bibliotecas principais
 
 Nesta célula realizamos a instalação das bibliotecas fundamentais do projeto:
 
@@ -68,7 +69,7 @@ Nesta célula realizamos a instalação das bibliotecas fundamentais do projeto:
 
 Essas dependências formam a base para o desenvolvimento e experimentação do modelo.
 
-#### 1.2 Instalação do LTNtorch
+#### Bloco 1.2 — Instalação do LTNtorch
 
 Aqui instalamos o **LTNtorch**, uma biblioteca baseada em PyTorch que permite:
 
@@ -78,7 +79,7 @@ Aqui instalamos o **LTNtorch**, uma biblioteca baseada em PyTorch que permite:
 
 Essa biblioteca será utilizada para construir e avaliar fórmulas lógicas no modelo.
 
-#### 1.3 Importação dos módulos
+#### Bloco 1.3 — Importação dos módulos
 
 Nesta etapa importamos todas as bibliotecas necessárias para o experimento, incluindo:
 
@@ -90,7 +91,7 @@ Nesta etapa importamos todas as bibliotecas necessárias para o experimento, inc
 
 Ao final, são exibidas mensagens confirmando o sucesso da importação e a versão do PyTorch utilizada.
 
-#### 1.4 Configuração do dispositivo de execução
+#### Bloco — 1.4 Configuração do dispositivo de execução
 
 Esta célula define automaticamente o dispositivo de execução do código:
 
@@ -99,14 +100,17 @@ Esta célula define automaticamente o dispositivo de execução do código:
 
 Essa abordagem garante maior eficiência computacional e compatibilidade com diferentes ambientes, como máquinas locais e Google Colab.
 
-#### 1.4 Configuração do dispositivo de execução
+#### Bloco 1.5 — Definição de constantes geométricas
 
-Esta célula define automaticamente o dispositivo de execução do código:
+Aqui são definidas constantes que representam o tamanho dos objetos geométricos usados no experimento:
 
-- **GPU (CUDA)**, caso esteja disponível;
-- **CPU**, caso contrário.
+- `SMALL_SIZE`: objetos pequenos, com dimensão 2 × 2;
+- `LARGE_SIZE`: objetos grandes, com dimensão 3 × 3.
 
-Essa abordagem garante maior eficiência computacional e compatibilidade com diferentes ambientes, como máquinas locais e Google Colab.
+Esses valores serão utilizados posteriormente para caracterizar propriedades geométricas e regras lógicas.
+
+
+
 
 
 
