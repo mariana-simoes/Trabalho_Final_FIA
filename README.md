@@ -109,6 +109,176 @@ Aqui são definidas constantes que representam o tamanho dos objetos geométrico
 
 Esses valores serão utilizados posteriormente para caracterizar propriedades geométricas e regras lógicas.
 
+# 2 - Tarefa Principal: Taxonomia e Formas
+#### Bloco 2.1 — Dataset CLEVR simplificado — instanciação determinística
+
+Neste bloco é definida a função `load_fixed_clevr_dataset`, responsável por construir um **dataset sintético fixo**, utilizado como **referência canônica** ao longo dos experimentos.
+
+Esse dataset possui as seguintes finalidades:
+- Servir como base controlada para depuração e validação;
+- Facilitar a interpretação qualitativa dos resultados;
+- Permitir análises detalhadas de casos específicos.
+
+##### Estrutura dos objetos
+
+Cada objeto é representado por um vetor de **11 atributos**, organizados da seguinte forma:
+
+- `[0–1]`: coordenadas espaciais `(x, y)` normalizadas no intervalo `[0, 1]`;
+- `[2–4]`: componentes de cor no espaço RGB;
+- `[5–9]`: codificação *one-hot* da forma geométrica (círculo, quadrado, cilindro, cone ou triângulo);
+- `[10]`: atributo de tamanho (`0.0` = pequeno, `1.0` = grande).
+
+Além do vetor numérico, cada objeto possui:
+- Um rótulo textual legível para inspeção humana;
+- Uma dimensão física real (`2×2` ou `3×3`) derivada do atributo de tamanho.
+
+Esse dataset é **determinístico**, isto é, sua composição não varia entre execuções.
+
+#### Bloco 2.2 — Dataset CLEVR simplificado — instanciação estocástica
+
+Neste bloco é definida a função `generate_random_clevr_dataset`, que gera um **dataset sintético aleatório** seguindo **exatamente a mesma estrutura vetorial** apresentada na Seção 2.1.
+
+A diferença entre os dois datasets reside exclusivamente no **processo de geração dos objetos**:
+- No dataset fixo, os atributos são pré-definidos;
+- No dataset aleatório, os atributos são amostrados estocasticamente.
+
+##### Propriedades
+
+- A dimensionalidade e a organização dos atributos são idênticas às do dataset determinístico;
+- As formas geométricas, cores, posições e tamanhos são sorteados aleatoriamente;
+- Uma *seed* opcional pode ser fornecida para garantir reprodutibilidade experimental.
+
+Esse dataset é utilizado principalmente para:
+- Avaliar a capacidade de generalização dos modelos;
+- Explorar múltiplos cenários possíveis mantendo a mesma taxonomia;
+- Evitar dependência excessiva de exemplos específicos.
+
+#### Bloco 2.3 — Visualização do cenário bidimensional
+
+Neste bloco é definida a função `plot_scene`, responsável por **visualizar graficamente instâncias do dataset CLEVR**, sejam elas provenientes do dataset determinístico (Seção 2.1) ou do dataset estocástico (Seção 2.2).
+
+A função assume implicitamente a **mesma estrutura de dados definida anteriormente**, garantindo compatibilidade com ambos os tipos de dataset.
+
+##### Convenções de visualização
+
+- As coordenadas normalizadas são desnormalizadas para o plano original;
+- A referência espacial adotada é:
+  - o **canto inferior esquerdo** do objeto para a maioria das formas;
+  - o **centro geométrico** para círculos.
+
+##### Representação gráfica
+
+Cada objeto é desenhado respeitando:
+- Sua forma geométrica;
+- Sua cor RGB;
+- Sua dimensão física real (`2×2` ou `3×3`).
+
+Caixas delimitadoras, rótulos textuais e uma legenda explicativa são incluídos para facilitar a interpretação visual e a validação do cenário.
+
+
+#### Bloco 2.4 — Conectivos lógicos e quantificadores fuzzy
+
+Neste bloco são definidos os conectivos e quantificadores fuzzy utilizados pelo framework Logic Tensor Networks (LTN), responsáveis por permitir a avaliação diferenciável de fórmulas lógicas.
+
+São utilizados:
+- **Not**: negação fuzzy padrão;
+- **And**: conjunção por produto;
+- **Or**: disjunção por soma probabilística;
+- **Implies**: implicação de Reichenbach.
+
+Os quantificadores definidos são:
+- **Forall**: quantificador universal com agregação *p-mean error*;
+- **Exists**: quantificador existencial com agregação *p-mean*.
+
+O operador `sat_agg` agrega os graus de satisfatibilidade das fórmulas e é utilizado como objetivo de otimização.
+
+#### Bloco 2.5 — Predicados neurais de forma
+
+Neste bloco é definido um modelo neural para predição de formas geométricas a partir do vetor de atributos do dataset.
+
+O modelo utiliza:
+- Um **encoder compartilhado** para extração de características;
+- **Cabeças de classificação independentes** para cada forma geométrica.
+
+Cada cabeça produz uma saída contínua em `[0, 1]`, interpretada como grau de pertinência à forma correspondente.
+
+As saídas do modelo são encapsuladas como **predicados LTN**, permitindo sua utilização direta em fórmulas lógicas fuzzy:
+- `isCircle`
+- `isSquare`
+- `isCylinder`
+- `isCone`
+- `isTriangle`
+
+#### Bloco 2.6 — Predicados neurais de tamanho
+
+Neste bloco é definido um modelo neural para **classificação do tamanho dos objetos**, utilizando a mesma representação vetorial de 11 atributos.
+
+O modelo é composto por:
+- Um **encoder compartilhado** para extração de características;
+- Duas **cabeças de classificação**, correspondentes às categorias:
+  - pequeno (`small`)
+  - grande (`big`)
+
+Cada cabeça retorna um valor contínuo em `[0, 1]`, interpretado como grau de pertinência ao respectivo tamanho.
+
+As saídas do modelo são encapsuladas como **predicados LTN**, permitindo sua utilização direta em fórmulas lógicas:
+- `isSmall`
+- `isBig`
+
+#### Bloco 2.7 — Extração do ground truth
+
+Neste bloco é realizada a extração dos **rótulos verdadeiros (ground truth)** a partir do dataset fixo definido na Seção 2.1.
+
+Os rótulos são obtidos diretamente da codificação original dos dados:
+- As **formas geométricas** são extraídas da codificação *one-hot* nos índices `[5–9]`;
+- O **tamanho** é extraído do índice `[10]`, onde:
+  - `0.0` representa objetos pequenos;
+  - `1.0` representa objetos grandes.
+
+Esses rótulos são utilizados para:
+- Avaliação quantitativa dos modelos;
+- Validação das predições neurais;
+- Comparação com os graus de satisfatibilidade das fórmulas lógicas.
+
+#### Bloco 2.8 — Axiomas lógicos para classificação de formas
+
+Neste bloco são definidos os **axiomas lógicos associados à classificação de formas geométricas**, utilizando os predicados neurais definidos anteriormente.
+
+Os axiomas impõem três tipos de restrições:
+
+- **Axiomas positivos**: objetos rotulados com uma forma específica devem satisfazer o predicado correspondente (ex.: círculos satisfazem `isCircle`);
+- **Exclusividade**: um objeto não pode pertencer simultaneamente a duas formas distintas;
+- **Completude**: todo objeto deve pertencer a pelo menos uma das cinco formas consideradas.
+
+Os axiomas são avaliados de forma fuzzy e agregados por meio do operador global de satisfatibilidade (`sat_agg`), resultando em um único escalar que mede o grau de consistência lógica das predições de forma.
+
+#### Bloco 2.9 — Axiomas lógicos para classificação de tamanho
+
+Neste bloco são definidos os **axiomas lógicos associados à classificação de tamanho**, considerando as duas categorias possíveis: pequeno e grande.
+
+As restrições impostas são:
+
+- Objetos pequenos devem satisfazer `isSmall` e não satisfazer `isBig`;
+- Objetos grandes devem satisfazer `isBig` e não satisfazer `isSmall`.
+
+Assim como no caso das formas, os axiomas são avaliados de maneira fuzzy e agregados em um único valor de satisfatibilidade.
+
+#### Bloco 2.10 — Treinamento conjunto dos predicados
+
+Neste bloco é definida a rotina de **treinamento conjunto** dos predicados neurais de **forma** e **tamanho**, utilizando as restrições lógicas como função objetivo.
+
+O treinamento segue o paradigma de *Logic Tensor Networks*, onde:
+- A função de perda é definida como `1 − sat`, sendo `sat` o grau de satisfatibilidade dos axiomas;
+- Os parâmetros dos modelos de forma e tamanho são otimizados simultaneamente;
+- A otimização é realizada via **Adam**.
+
+Durante o treinamento são monitorados:
+- A satisfatibilidade total dos axiomas;
+- A satisfatibilidade dos axiomas de forma;
+- A satisfatibilidade dos axiomas de tamanho.
+
+O processo busca maximizar a consistência lógica global das predições em relação às taxonomias definidas.
+
 
 
 
