@@ -1097,7 +1097,111 @@ Este bloco define a função principal que gerencia o **ciclo completo** da Tare
 
 # 5 - Tarefa: Raciocínio Composto
 
+Este módulo define três funções responsáveis por realizar **consultas lógico-fuzzy** sobre um conjunto de objetos representados em tensores.  
+Cada função corresponde a uma **fórmula lógica** expressa em termos de predicados relacionais e propriedades visuais, permitindo avaliar o grau de verdade dessas sentenças dentro de uma cena.
+
+
+
+#### Bloco 5.1 — `query_compound_filtering(data_tensor)`
+
+**Consulta:**  
+“Existe algum objeto pequeno que esteja abaixo de um cilindro e à esquerda de um quadrado?”
+
+**Fórmula lógica:**  
+∃x ( IsSmall(x) ∧ ∃y(IsCylinder(y) ∧ Below(x, y)) ∧ ∃z(IsSquare(z) ∧ LeftOf(x, z)) )
+
+Esta função busca identificar se há, no conjunto de objetos `data_tensor`, **algum objeto pequeno** que satisfaça simultaneamente duas condições espaciais:  
+estar **abaixo de um cilindro** e **à esquerda de um quadrado**.  
+
+O código percorre cada objeto do tensor e o considera como possível candidato (`x`). Para cada candidato, são realizadas duas buscas existenciais:
+
+1. **Relação abaixo de um cilindro (`Below(x, y)`):**  
+   Itera-se sobre todos os outros objetos (`y`), verificando se algum é um cilindro (`IsCylinder(y)`) e se o objeto atual está abaixo dele.  
+   A conjunção dos valores fuzzy dessas relações é armazenada e o valor máximo é tomado, representando o quantificador existencial (∃y).
+
+2. **Relação à esquerda de um quadrado (`LeftOf(x, z)`):**  
+   De forma análoga, percorre-se o conjunto em busca de um quadrado (`IsSquare(z)`) à direita do objeto `x`.  
+   O valor máximo das conjunções é calculado para representar o ∃z.
+
+Por fim, o grau de verdade da sentença completa é obtido pela multiplicação fuzzy dos três componentes:  
+`IsSmall(x) * exists_below_cylinder * exists_left_square`.  
+
+O resultado final (`result`) é o **máximo** desses valores entre todos os objetos `x`, simbolizando a existência de pelo menos um elemento que satisfaz a condição completa.
+#### Bloco 5.2 — `query_green_cone_between(data_tensor)`
+
+**Consulta:**  
+“Existe um cone verde que está entre dois outros objetos quaisquer?”
+
+**Fórmula lógica:**  
+∃x, y, z ( IsCone(x) ∧ IsGreen(x) ∧ InBetween(x, y, z) )
+
+Esta função verifica se há **algum cone verde** posicionado **entre dois outros objetos** da cena.  
+Primeiro, ela percorre o tensor de objetos e identifica candidatos que possuam a forma de cone (`IsCone(x)`).  
+
+Para verificar se o objeto é **verde**, são analisadas as componentes de cor (r, g, b) do tensor.  
+Um objeto é considerado verde quando sua componente `g` (verde) é maior que 0.5, enquanto `r` e `b` (vermelho e azul) são menores que 0.5.  
+O resultado é convertido em um valor fuzzy `is_green` entre 0 e 1.
+
+Em seguida, o código percorre todas as combinações possíveis de objetos `y` e `z`, garantindo que `x`, `y` e `z` sejam distintos.  
+Para cada trio, calcula-se a relação `InBetween(x, y, z)`, que mede se `x` está espacialmente entre `y` e `z`.  
+O valor máximo obtido dessa verificação representa o quantificador existencial sobre `y` e `z`.
+
+Por fim, a conjunção fuzzy `is_cone_x * is_green * max_between` indica o grau de verdade para cada cone candidato.  
+O valor final retornado pela função é o máximo entre todos os cones avaliados, expressando a existência de um cone verde entre dois outros objetos quaisquer.
+#### Bloco 5.3 — `query_triangles_close_same_size(data_tensor)`
+
+**Consulta:**  
+“Se dois objetos são triângulos e estão próximos (CloseTo), então eles devem ter o mesmo tamanho.”
+
+**Fórmula lógica:**  
+∀x, y ( (IsTriangle(x) ∧ IsTriangle(y) ∧ CloseTo(x, y)) ⇒ SameSize(x, y) )
+
+Diferente das consultas anteriores, esta função expressa uma **regra universal**: ela deve ser válida para **todos os pares de objetos** na cena.  
+O objetivo é verificar a consistência lógica do modelo em termos de tamanho para objetos semelhantes e próximos.
+
+O código percorre todos os pares `(x, y)` distintos e calcula:
+
+1. **Antecedente:**  
+   Combinação fuzzy dos predicados `IsTriangle(x)`, `IsTriangle(y)` e `CloseTo(x, y)`, representando a condição de que os dois objetos são triângulos e estão próximos.
+
+2. **Consequente (SameSize):**  
+   Determinado por `(IsSmall(x) ∧ IsSmall(y)) ∨ (IsBig(x) ∧ IsBig(y))`, ou seja, ambos pequenos ou ambos grandes.  
+   O cálculo fuzzy inclui uma correção para evitar sobreposição de valores.
+
+3. **Implicação fuzzy:**  
+   Computada usando a fórmula padrão `1 - p + p * q`, que corresponde a `(¬p) ∨ (p ∧ q)` em lógica clássica.  
+   Essa operação retorna um grau de verdade que representa o quanto a implicação é satisfeita para aquele par de objetos.
+
+Por fim, todos os valores de implicação são agrupados e a função retorna a **média fuzzy** desses valores, representando o grau geral de validade da regra.  
+O resultado próximo de 1 indica alta consistência lógica — ou seja, todos os triângulos próximos possuem tamanhos equivalentes.
+
 # 6 - Função Principal
+
+A função `main()` representa o **ponto de entrada principal** do sistema, responsável por executar todo o pipeline de raciocínio simbólico com base em lógica tensorial (LTN) utilizando um **dataset fixo**.  
+Ela organiza o fluxo de execução desde o carregamento dos dados até o treinamento dos predicados e a avaliação de tarefas de raciocínio lógico, imprimindo um resumo final de resultados de satisfação lógica.
+
+Logo no início, são exibidas mensagens no console indicando o início do processo e o tipo de dataset utilizado.  
+Em seguida, a função `load_fixed_clevr_dataset()` é chamada para carregar os dados de entrada, retornando três elementos:  
+- `data`, contendo os tensores com as representações numéricas dos objetos;  
+- `labels`, contendo os rótulos semânticos associados a cada objeto;  
+- `dimensions`, representando as dimensões do cenário.
+
+Após o carregamento, o código chama `plot_scene(data, labels, dimensions)` para **visualizar o cenário fixo**, mostrando graficamente a disposição dos objetos e suas propriedades. Essa etapa auxilia na inspeção visual dos dados antes do treinamento.
+
+Na sequência, ocorre o **treinamento dos predicados lógicos** por meio da função `train_all_predicates(data, epochs=500, lr=0.001)`.  
+Essa função treina os predicados que representam propriedades e relações dos objetos (como forma, tamanho e posição), otimizando-os para maximizar a satisfação lógica das regras definidas. O histórico de treinamento é armazenado na variável `history`.
+
+Após o treinamento, são executadas duas tarefas de raciocínio espacial:  
+- **Tarefa 2 (Raciocínio Horizontal):** realizada pela função `run_task2_complete(data, labels)`, que avalia relações como “à esquerda de” ou “à direita de” entre os objetos, retornando o histórico e os resultados de satisfação dessa dimensão lógica.  
+- **Tarefa 3 (Raciocínio Vertical):** executada por `run_task3_complete(data, labels)`, que avalia relações de posicionamento vertical, como “acima de” e “abaixo de”.
+
+Concluídas as etapas de raciocínio, o programa imprime uma mensagem de confirmação informando que a execução foi finalizada com sucesso, seguida de um **resumo dos resultados de satisfação lógica** para as três tarefas:  
+1. **Tarefa 1 (Formas)** — relacionada ao aprendizado e classificação de formas geométricas;  
+2. **Tarefa 2 (Horizontal)** — raciocínio sobre relações horizontais;  
+3. **Tarefa 3 (Vertical)** — raciocínio sobre relações verticais.
+
+Por fim, o bloco condicional `if __name__ == "__main__":` garante que a função `main()` seja executada apenas quando o arquivo for executado diretamente, e não quando importado como módulo em outro script.  
+Esse padrão é utilizado para **organizar a execução do código principal**, assegurando que o pipeline completo seja iniciado apenas quando desejado.
 
 # 7 - Teste em 5 Datasets
 
